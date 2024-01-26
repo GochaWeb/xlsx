@@ -1,5 +1,4 @@
 import xlsx from 'xlsx';
-import XLSX from "xlsx";
 
 const queryString = "XlSX Test";
 let  wb;
@@ -25,4 +24,4 @@ if (queryString) {
     ]], {origin: -1});
 }
 
-XLSX.writeFile(wb,"gocha.XLSX")
+xlsx.writeFile(wb,"example.xlsx")
