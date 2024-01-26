@@ -7,7 +7,6 @@ let sheetNames = ['ბრუნვა','ამონაწერი','parameters
 const getRecordHeaders = (recordFields, language) => {
     let recordHeaders = {};
     Object.keys(recordFields).forEach(key => {
-        console.log(recordFields[key].mlHeader)
         let mlHeader = is.string(recordFields[key].mlHeader) ? gssLanguage.mlStrings[recordFields[key].mlHeader] : recordFields[key].mlHeader;
         if (!mlHeader) {
             recordHeaders[key.toLowerCase()] = key;
