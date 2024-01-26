@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import is from 'is';
 import xlsx from 'xlsx';
 
