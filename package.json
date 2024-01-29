@@ -9,9 +9,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@gss-llc/gss-common.gss.ge": "^0.2.42",
+    "@gss-llc/gss-language.gss.ge": "^0.1.5",
     "is": "^3.3.0",
     "lodash": "^4.17.21",
     "node-fetch": "^2.7.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "typescript": "~5.2.2"
   }
 }
