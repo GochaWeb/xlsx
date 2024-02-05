@@ -1,7 +1,6 @@
 import gssCommon from '@gss-llc/gss-common.gss.ge';
 const recordsFromExcel = (await import('./records-from-excel-file.mjs')).default;
 const gssLanguage = (await import('./gss-language.mjs')).default;
-import xlsx from 'xlsx';
 
 const excelGoodFields = {
     name: {required: false, mlHeader: 'name'},
@@ -21,9 +20,11 @@ const excelGoodFields = {
 
 // console.log(gssLanguage.lStrings(gssLanguage.mlStrings.goods))
 const sheetNames = ['საბუთები','საქონელი']
+
+
 let excelGoods =
     recordsFromExcel(null,null,null,
-        '/Users/gocha-gogicha/programing/xlsx/goods.xlsx',
+        '../goods.xlsx',
         sheetNames,
         excelGoodFields, 'ka', 'gss', 'error');
 

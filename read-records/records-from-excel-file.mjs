@@ -30,6 +30,7 @@ const getRecordHeaders = (recordFields, language) => {
             })
         }
     });
+
     return recordHeaders;
 };
 
