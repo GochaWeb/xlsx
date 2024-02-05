@@ -20,11 +20,11 @@ const excelGoodFields = {
 };
 
 // console.log(gssLanguage.lStrings(gssLanguage.mlStrings.goods))
-
+const sheetNames = ['საბუთები','საქონელი']
 let excelGoods =
     recordsFromExcel(null,null,null,
-        '/Users/gocha-gogicha/programing/xlsx/sf-turn-over-.xlsx',
-        ['ბრუნვა'],
+        '/Users/gocha-gogicha/programing/xlsx/goods.xlsx',
+        sheetNames,
         excelGoodFields, 'ka', 'gss', 'error');
 
 // const workbook = xlsx.readFile('/Users/gocha-gogicha/programing/xlsx/sf-turn-over-.xlsx',{cellDates : true});

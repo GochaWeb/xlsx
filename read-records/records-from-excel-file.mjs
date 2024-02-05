@@ -166,6 +166,6 @@ export default (req, res, next, excelPath, sheetNames, recordFields, language, e
 
         return;
     }
-    console.log(records)
+console.log(records)
     return records;
 };
