@@ -2,6 +2,10 @@ import gssCommon from '@gss-llc/gss-common.gss.ge';
 const recordsFromExcel = (await import('./records-from-excel-file.mjs')).default;
 const gssLanguage = (await import('./gss-language.mjs')).default;
 
+const filePath = new URL('../goods.xlsx', import.meta.url).pathname.toString();
+
+
+
 const excelGoodFields = {
     name: {required: false, mlHeader: 'name'},
     unit: {required: false, mlHeader: 'Dimension'},
@@ -19,14 +23,20 @@ const excelGoodFields = {
 };
 
 // console.log(gssLanguage.lStrings(gssLanguage.mlStrings.goods))
+
 const sheetNames = ['საბუთები','საქონელი']
 
 
 let excelGoods =
     recordsFromExcel(null,null,null,
-        '../goods.xlsx',
+        filePath,
         sheetNames,
         excelGoodFields, 'ka', 'gss', 'error');
+
+
+
+
+
 
 // const workbook = xlsx.readFile('/Users/gocha-gogicha/programing/xlsx/sf-turn-over-.xlsx',{cellDates : true});
 // const sheetName = workbook.SheetNames[0];
