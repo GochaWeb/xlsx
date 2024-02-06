@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "compile": "node read-records/read-records.mjs && tsc -p read-records/tsconfig.json"
   },
   "author": "",
   "license": "ISC",
