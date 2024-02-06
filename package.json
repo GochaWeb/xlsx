@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "compile": "node read-records/read-records.mjs && tsc -p read-records/tsconfig.json"
+    "compile": "tsc -p read-records/tsconfig.json && node read-records/read-records.mjs"
   },
   "author": "",
   "license": "ISC",
