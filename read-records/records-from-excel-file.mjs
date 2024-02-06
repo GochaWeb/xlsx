@@ -6,7 +6,6 @@ import xlsx from 'xlsx';
 
 import gssLanguage from '@gss-llc/gss-language.gss.ge';
 
-
 const sendErrorEMail =  (req, res, next, sender, subject, message) => {
     console.log('--- sendErrorEMail');
     console.log(message);
@@ -14,7 +13,6 @@ const sendErrorEMail =  (req, res, next, sender, subject, message) => {
 
 
 const getRecordHeaders = (recordFields, language) => {
-
     let recordHeaders = {};
     Object.keys(recordFields).forEach(key => {
         let mlHeader = is.string(recordFields[key].mlHeader) ? gssLanguage.mlStrings[recordFields[key].mlHeader] : recordFields[key].mlHeader;
@@ -65,7 +63,7 @@ export default (req, res, next, excelPath, sheetNames, recordFields, language, e
 
     const sheet = sheets[0].sheet;
     const excelHeaders = xlsx.utils.sheet_to_json(sheet, {raw: false, header: 1, range: 'A1:ZZ1'})[0];
-    const excelRecords = xlsx.utils.sheet_to_json(sheet, {raw: true,blankrows: '**'});
+    const excelRecords = xlsx.utils.sheet_to_json(sheet, {raw: true, blankrows: '**'});
 
     if (excelRecords.length === 0) {
         return;
@@ -74,7 +72,6 @@ export default (req, res, next, excelPath, sheetNames, recordFields, language, e
     let excelHeaderByFieldKey = {};
     let recordLHeaderByExcelHeader = {};
     Object.keys(recordLHeaders).forEach(recordLHeader => {
-
         const excelHeader = _.find(excelHeaders, excelHeader => {
             return excelHeader && (excelHeader.toLowerCase().indexOf(recordLHeader) === 0)
         });
@@ -85,7 +82,6 @@ export default (req, res, next, excelPath, sheetNames, recordFields, language, e
     });
 
     Object.keys(recordFields).forEach(key => {
-
         const fieldOption = recordFields[key];
         if (!excelHeaderByFieldKey[key] && fieldOption.required) {
             let mlHeader = is.string(fieldOption.mlHeader) ? gssLanguage.mlStrings[fieldOption.mlHeader] : fieldOption.mlHeader;

@@ -1,9 +1,13 @@
 import gssCommon from '@gss-llc/gss-common.gss.ge';
+import {fileURLToPath} from "url";
+import path from "path";
 const recordsFromExcel = (await import('./records-from-excel-file.mjs')).default;
 const gssLanguage = (await import('./gss-language.mjs')).default;
 
-const filePath = decodeURIComponent(new URL('../goods.xlsx', import.meta.url).pathname.toString());
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
+const filePath = path.normalize(__dirname + '/../goods.xlsx');
 
 const excelGoodFields = {
     name: {required: false, mlHeader: 'name'},
