@@ -2,12 +2,7 @@ import gssCommon from '@gss-llc/gss-common.gss.ge';
 const recordsFromExcel = (await import('./records-from-excel-file.mjs')).default;
 const gssLanguage = (await import('./gss-language.mjs')).default;
 
-let filePath = new URL('../goods.xlsx', import.meta.url).pathname.toString();
-
-if(filePath.indexOf('%20') !== -1) {
-    filePath = filePath.replace(/%20/g, " ");
-}
-
+const filePath = decodeURIComponent(new URL('../goods.xlsx', import.meta.url).pathname.toString());
 
 
 const excelGoodFields = {
