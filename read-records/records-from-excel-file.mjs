@@ -70,14 +70,14 @@ export default (req, res, next, excelPath, sheetNames, recordFields, language, e
     }
 
     let excelHeaderByFieldKey = {};
-    let recordLHeaderByExcelHeader = {};
+    //let recordLHeaderByExcelHeader = {};
     Object.keys(recordLHeaders).forEach(recordLHeader => {
         const excelHeader = _.find(excelHeaders, excelHeader => {
             return excelHeader && (excelHeader.toLowerCase().indexOf(recordLHeader) === 0)
         });
         if (excelHeader) {
             excelHeaderByFieldKey[recordLHeaders[recordLHeader]] = excelHeader;
-            recordLHeaderByExcelHeader[excelHeader] = recordLHeader;
+            //recordLHeaderByExcelHeader[excelHeader] = recordLHeader;
         }
     });
 
@@ -107,9 +107,10 @@ export default (req, res, next, excelPath, sheetNames, recordFields, language, e
 
         let record = {};
 
-        Object.keys(excelRecord).forEach(key => {
-            const field = recordLHeaders[recordLHeaderByExcelHeader[key]];
+        Object.keys(excelRecord).forEach((key) => {
 
+            //const field = recordLHeaders[recordLHeaderByExcelHeader[key]];
+            const field = recordLHeaders[key];
             if (field) {
                 record[field] = excelRecord[key];
             }
@@ -163,6 +164,6 @@ export default (req, res, next, excelPath, sheetNames, recordFields, language, e
 
         return;
     }
-console.log(records)
+    console.log(records)
     return records;
 };

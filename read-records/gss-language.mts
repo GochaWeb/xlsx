@@ -294,6 +294,26 @@ class GSS_Language {
                     en: 'Group',
                     ru: 'Группа'
                 },
+                priceInAllStock: {
+                    ka: 'ყველა საწყობის ფასი',
+                    en: 'Price of all warehouses',
+                    ru: 'Цена всех складов'
+                },
+                priceInStock: {
+                    ka: 'id-1-ფასი-საწყობი',
+                    en: 'id-{0}-price-{1}',
+                    ru: 'id-{0}-цена-{1}'
+                },
+                minAmountInStock: {
+                    ka: 'id-1-მინიმალური რაოდენობა-საწყობი',
+                    en: 'id-{0}-Minimal amount-{1}',
+                    ru: 'id-{0}-Минимальное количество-{1}'
+                },
+                minAmountInAllStock: {
+                    ka: 'ყველა საწყობის მინიმალური რაოდენობა',
+                    en: 'Minimal amount of all warehouses',
+                    ru: 'Минимальное количество всех складов'
+                },
                 isActive: {
                     ka: 'აქტიურია',
                     en: 'Active',
@@ -2506,6 +2526,21 @@ class GSS_Language {
                     ka: 'შტრიხკოდით',
                     en: 'by barcode',
                     ru: 'по штрих-коду'
+                },
+                series: {
+                    ka: 'სერია',
+                    en: 'Series',
+                    ru: 'Серия'
+                },
+                term: {
+                    ka: 'ვადა',
+                    en: 'Term',
+                    ru: 'Срок'
+                },
+                manufacturer: {
+                    ka: 'მწარმოებელი',
+                    en: 'Manufacturer',
+                    ru: 'Производитель'
                 },
                 rsgeConnectionError: {
                     ka: 'არ მყარდება კავშირი rs.ge სერვისთან\nშეამოწმეთ პარამეტრებში rs.ge სერვისის\nმომხმარებლის სახელი და პაროლი',

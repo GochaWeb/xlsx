@@ -10,10 +10,8 @@ const __dirname = path.dirname(__filename);
 const filePath = path.normalize(__dirname + '/../goods.xlsx');
 
 const excelGoodFields = {
-    name: {required: false, mlHeader: 'name'},
-    unit: {required: false, mlHeader: 'Dimension'},
-    Test: {required: false, mlHeader: 'Test'},
-
+    name: {required: true, mlHeader: 'name'},
+    unit: {required: true, mlHeader: 'Dimension'},
     code: {required: false, value: '', mlHeader: 'code'},
     barCode: {required: false, value: '', mlHeader: 'barCode'},
     series: {required: false, value: '', mlHeader: 'series'},
@@ -22,13 +20,14 @@ const excelGoodFields = {
     grp: {required: false, value: '', mlHeader: 'group'},
 
     allStockPrice: {required: false, value: '', mlHeader: 'priceInAllStock'},
-    allStockMinAmount: {required: false, value: '', mlHeader: 'minAmountInAllStock'}
+    priceInStock : {required: true, value: '', mlHeader:'priceInStock'},
+    allStockMinAmount: {required: false, value: '', mlHeader: 'minAmountInAllStock'},
+    minAmountInStock : {required: false, value: '', mlHeader: 'minAmountInStock'}
 };
 
 // console.log(gssLanguage.lStrings(gssLanguage.mlStrings.goods))
 
 const sheetNames = ['საბუთები','საქონელი']
-
 
 let excelGoods =
     recordsFromExcel(null,null,null,
