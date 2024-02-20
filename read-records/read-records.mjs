@@ -12,17 +12,17 @@ const filePath = path.normalize(__dirname + '/../goods.xlsx');
 const excelGoodFields = {
     name: {required: true, mlHeader: 'name'},
     unit: {required: true, mlHeader: 'Dimension'},
-    code: {required: false, value: '', mlHeader: 'code'},
-    barCode: {required: false, value: '', mlHeader: 'barCode'},
-    series: {required: false, value: '', mlHeader: 'series'},
-    term: {required: false, value: null, mlHeader: 'term'},
+    code: {required: false, defaultValue: '', mlHeader: 'code'},
+    barCode: {required: false, valdefaultValueue: '', mlHeader: 'barCode'},
+    series: {required: false, defaultValue: '', mlHeader: 'series'},
+    term: {required: false, defaultValue: null, mlHeader: 'term'},
     manufacturer: {required: false, mlHeader: 'manufacturer'},
-    grp: {required: false, value: '', mlHeader: 'group'},
+    grp: {required: false, defaultValue: '', mlHeader: 'group'},
 
-    allStockPrice: {required: false, value: '', mlHeader: 'priceInAllStock'},
-    priceInStock : {required: true, value: '', mlHeader:'priceInStock'},
-    allStockMinAmount: {required: false, value: '', mlHeader: 'minAmountInAllStock'},
-    minAmountInStock : {required: false, value: '', mlHeader: 'minAmountInStock'}
+    allStockPrice: {required: false, defaultValue: '', mlHeader: 'priceInAllStock'},
+    priceInStock : {required: true, defaultValue: '', mlHeader:'priceInStock'},
+    allStockMinAmount: {required: false, defaultValue: '', mlHeader: 'minAmountInAllStock'},
+    minAmountInStock : {required: false, defaultValue: '', mlHeader: 'minAmountInStock'}
 };
 
 // console.log(gssLanguage.lStrings(gssLanguage.mlStrings.goods))
