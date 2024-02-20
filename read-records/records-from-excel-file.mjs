@@ -40,8 +40,12 @@ const getRecordAllHeaders = (recordFields, language) => {
     return recordHeaders;
 };
 
+const getHeaderRawIndex =  () => {
+    return 6;
+}
+
 // აბრუნებს ექსელის ჩანაწერების მასივს ან შეცდომის შემთხვევაში აგზავნის შესაბამის მეილს და აბრუნებს undefined
-export default (req, res, next, excelPath, sheetNames, recordDesctiptionByFields, language, errorMailSender, errorMailSubject) => {
+export default (req, res, next, excelPath, sheetNames, recordDesctiptionByFields, headerRawIndex, language, errorMailSender, errorMailSubject) => {
     language = language || 'en';
 
     const excelWorkbook = xlsx.readFile(excelPath);
@@ -64,6 +68,18 @@ export default (req, res, next, excelPath, sheetNames, recordDesctiptionByFields
         sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelOneSheetRequired, {language: language}), [sheetNames.join(` ${gssLanguage.lString(gssLanguage.mlStrings['or'], {language: language})} `)]));
         return;
     }
+    const sheet = sheets[0].sheet;
+
+    //ამ შემთხვევაში ვეძახი უბრალოდ ეს კოდი ამოვარდება აქედან რადგან გადმოეცემა
+    headerRawIndex =  getHeaderRawIndex();
+
+    if(!headerRawIndex){
+        //აქ დაიწერება შეცდომის კოდი
+        return;
+    }
+
+    const range =  'A'+headerRawIndex+ ':' + sheet["!ref"].split(':')[1];
+
 
     let records = [],
         requiredHeaders = [],
@@ -71,9 +87,8 @@ export default (req, res, next, excelPath, sheetNames, recordDesctiptionByFields
 
     let recordAllLHeaders = getRecordAllHeaders(recordDesctiptionByFields);
 
-    const sheet = sheets[0].sheet;
-    const excelHeaders = xlsx.utils.sheet_to_json(sheet, {raw: false, header: 1, range: 'A1:ZZ1'})[0];
-    const excelRecords = xlsx.utils.sheet_to_json(sheet, {raw: true, blankrows: '**'});
+    const excelHeaders = xlsx.utils.sheet_to_json(sheet, {raw: false, header: 1, range: range})[0];
+    const excelRecords = xlsx.utils.sheet_to_json(sheet, {raw: true, blankrows: '**',range : xlsx.utils.decode_range(range)});
 
     // თუ ცარიელი ექსელია ვბრუნდები
     if (excelRecords.length === 0) {
