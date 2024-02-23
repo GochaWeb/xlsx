@@ -680,6 +680,11 @@ class GSS_Language {
                     en: 'Period',
                     ru: 'Период'
                 },
+                result: {
+                    ka: 'შედეგი',
+                    en : 'Result',
+                    ru : 'Результат'
+                },
                 selectPeriodStart: {
                     ka: 'პერიოდის დასაწყისის არჩევა',
                     en: 'Select period start',
@@ -1011,6 +1016,21 @@ class GSS_Language {
                     ka: 'დებეტი',
                     en: 'Debit',
                     ru: 'Дебет'
+                },
+                debitAccountNumber: {
+                    ka : 'დებეტური ანგარიშის ნომერი',
+                    en : 'Debit account number',
+                    ru : 'Номер дебетового счета'
+                },
+                debitAccount: {
+                    ka : 'დებეტური ანგარიში',
+                    en : 'Debit account',
+                    ru : 'Дебетовый счет'
+                },
+                debitaccount: {
+                    ka : 'სადებეტო ანგარიში',
+                    en : 'Debit account',
+                    ru : 'Дебетовый счет'
                 },
                 credit: {
                     ka: 'კრედიტი',
@@ -4291,7 +4311,7 @@ class GSS_Language {
                     ru: 'Спасибо, что ведете бизнес вместе с нами... Если у вас есть вопросы, пожалуйста, не стесняйтесь и свяжетесь с нами'
                 },
                 //
-            goods: {
+                goods: {
                     ka: 'საქონელი',
                     en: 'Goods',
                     ru: 'Товар'

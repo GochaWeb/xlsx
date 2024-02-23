@@ -78,7 +78,7 @@ export default (req, res, next, excelPath, sheetNames, recordDesctiptionByFields
         return;
     }
 
-    const range =  'A'+headerRawIndex+ ':' + sheet["!ref"].split(':')[1];
+    const stringOfRange =  'A'+headerRawIndex+ ':' + sheet["!ref"].split(':')[1];
 
 
     let records = [],
@@ -87,8 +87,8 @@ export default (req, res, next, excelPath, sheetNames, recordDesctiptionByFields
 
     let recordAllLHeaders = getRecordAllHeaders(recordDesctiptionByFields);
 
-    const excelHeaders = xlsx.utils.sheet_to_json(sheet, {raw: false, header: 1, range: range})[0];
-    const excelRecords = xlsx.utils.sheet_to_json(sheet, {raw: true, blankrows: '**',range : xlsx.utils.decode_range(range)});
+    const excelHeaders = xlsx.utils.sheet_to_json(sheet, {raw: false, header: 1, range: stringOfRange})[0];
+    const excelRecords = xlsx.utils.sheet_to_json(sheet, {raw: true, blankrows: '**',range : xlsx.utils.decode_range(stringOfRange)});
 
     // თუ ცარიელი ექსელია ვბრუნდები
     if (excelRecords.length === 0) {
