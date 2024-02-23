@@ -70,7 +70,7 @@ const getHeaderRawIndex = (mlHeaders, sheet) => {
     // გადმოეცემა mlHeaders - დაფილტრული required - ის მიხედვით მასივის მასივი და შიტი
     sheet = sheet || worksheet;
     if (!worksheet['!ref']) {
-        //ვამოწმებ თუ შიტი ცარიელია
+        // ვამოწმებ თუ შიტი ცარიელია
         // sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelCanNotFindSheet, {language: language}), [`'${sheetNames.join('\', \'')}'`]));
         return;
     }
@@ -96,7 +96,6 @@ const getHeaderRawIndex = (mlHeaders, sheet) => {
             } else {
                 singleMlHeaders[header] = header
             }
-
         });
     })
 
@@ -104,13 +103,13 @@ const getHeaderRawIndex = (mlHeaders, sheet) => {
         // mlHeadersObjArray- ობიექტებიდან ვიღე კეიებს და ვაბრუნებ მასივის მასივად. ვიღებ უნიკალურს
         const uniqKeys = _.intersection(...mlHeadersObjArray.map(obj => Object.keys(obj)));
 
+        //ვამოწმებ თუ მაქვს უნიკალური კეიები
         if (_.isEmpty(uniqKeys)) {
-            //ვამოწმებ თუ მაქვს უნიკალური კეიები
             // sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelCanNotFindSheet, {language: language}), [`'${sheetNames.join('\', \'')}'`]));
             return;
         }
         // mlHeadersObjArray - ს ვფილტრავ უნიკალური კეიების მიხედვით
-        mlHeadersObjArray = mlHeadersObjArray.filter(obj => _.isEqual(Object.keys(obj), uniqKeys));
+        mlHeadersObjArray = mlHeadersObjArray.map(obj => _.pick(obj, uniqKeys));
     }
 
     //აქ ამ ობიექტს ვაქცევ ობიექტად სადაც filed - ის კეიები არის ამ ობიექტში არსებული ობიექტების კეიები
@@ -171,7 +170,7 @@ const test = () => {
                 en: 'test',
                 ru: 'Дата',
                 tr: 'ww'
-            }, 'gocha', 'debitAccountNumber', 'debitAccount', 'debitaccount', 'gia']
+            },{ka:'gocha',en:'gia'}, 'gocha', 'debitAccountNumber', 'debitAccount', 'debitaccount', 'gia']
         }
     };
 
@@ -180,7 +179,8 @@ const test = () => {
         .map(key => arrify(excelTestFields[key].mlHeader));
 
     const result = getHeaderRawIndex(mlHeadersArray, worksheet)
-    console.log(result)
+     console.log(result)
+
 
 }
 
