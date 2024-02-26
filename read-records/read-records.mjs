@@ -76,7 +76,7 @@ const getHeaderRawIndex = (mlHeaders, sheet) => {
     }
 
     //ეს მჭირდება ციკლისთვის რომ ტყვილად არ იტრიალოს
-    let IndexFounded = false;
+    let hasIndexFound = false;
 
     //დაუფილტრავი ჰედერების მასივები სადაც კეიები არის ენის დასახელება
     let filteredMlHeadersByLanguage = {};
@@ -84,7 +84,7 @@ const getHeaderRawIndex = (mlHeaders, sheet) => {
     let mlHeadersObjArray = [];
     //singleMlHeaders - ის დასახელებები რომლებიც არ მოიძებნა ენებში
     let singleMlHeaders = {};
-    let RawIndex = undefined;
+    let rawIndex = undefined;
 
     mlHeaders.forEach(headerArr => {
         headerArr.forEach(header => {
@@ -125,31 +125,21 @@ const getHeaderRawIndex = (mlHeaders, sheet) => {
         _.merge(mlHeaders, Object.values(singleMlHeaders))
     })
 
-    Object.values(filteredMlHeadersByLanguage).forEach(headers => {
-        //დავრბივარ ამ დაფილტრულ ობიექტში და ვიღებ თითოეული ობიექტის მასივს
-        for (let rowNum = 0; rowNum <= XLSX.utils.decode_range(worksheet['!ref']).e.r; rowNum++) {
-            //ვიღებ შიტის start raw -ს
-            if (IndexFounded) {
-                //აქ ვამოწმებ თუ ინდექსი ნაპოვნია ტყვილად რომ არ იტრიალოს ციკლმა
-                return;
-            }
-
-            for (let colNum = 0; colNum <= XLSX.utils.decode_range(worksheet['!ref']).e.c; colNum++) {
-                //როუს მიხედვით დავრბივარ ქოლუმნებში და ვამოწმებ თითოეულ უჯრის value - ს,
-                // თუ ეს value შედის ამ headers - ის მასივში
+    Object.values(filteredMlHeadersByLanguage).some(headers => {
+        return _.range(XLSX.utils.decode_range(worksheet['!ref']).e.r).some(rowNum => {
+            return _.range(XLSX.utils.decode_range(worksheet['!ref']).e.c).some(colNum => {
                 const cell = worksheet[XLSX.utils.encode_cell({r: rowNum, c: colNum})];
                 if (cell && headers.includes(cell.v)) {
-                    IndexFounded = true
-                    RawIndex = rowNum;
-                    return;
+                    rawIndex = rowNum;
+                    return true;
                 }
-            }
-        }
-
-    })
+                return false;
+            });
+        });
+    });
     // შეიძლება შეტყობინების დაბრუნებაც თუ ინდექსი undefined - ია
     //ამ ფუნქციამ შეიძლება დააბრუნოს undefined თუ შიტი ცარიელია ან ვერ მოიძებნა შიტში ჰედერები
-    return RawIndex;
+    return rawIndex;
 }
 
 
@@ -170,7 +160,7 @@ const test = () => {
                 en: 'test',
                 ru: 'Дата',
                 tr: 'ww'
-            },{ka:'gocha',en:'gia'}, 'gocha', 'debitAccountNumber', 'debitAccount', 'debitaccount', 'gia']
+            }, {ka: 'gocha', en: 'gia'}, 'gocha', 'debitAccountNumber', 'debitAccount', 'debitaccount', 'gia']
         }
     };
 
@@ -179,7 +169,7 @@ const test = () => {
         .map(key => arrify(excelTestFields[key].mlHeader));
 
     const result = getHeaderRawIndex(mlHeadersArray, worksheet)
-     console.log(result)
+    console.log(result)
 
 
 }
