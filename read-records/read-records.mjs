@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 
-const sheetNames = ['საბუთები', 'საქონელი','Sheet1']
+const sheetNames = ['საბუთები', 'Sheet1']
 const excelGoodFields = {
     result: {
         required: false,
@@ -51,8 +51,9 @@ const test = () => {
             required: true, defaultValue: '',
             mlHeader: ['debit',
                 {ka: 'ტესტ', en: 'gocha', ru: 'Дата'},
-                {ka: 'ტესტ', en: 'gia', ru: 'Дата', tr: 'ww'
-                },'debitAccount', 'debitaccount', 'gia','დებეტური ანგარიშის სახელი'
+                {
+                    ka: 'ტესტ', en: 'gia', ru: 'Дата', tr: 'ww'
+                }, 'debitAccount', 'debitaccount', 'gia', 'დებეტური ანგარიშის სახელი'
             ]
         }
     };
@@ -107,7 +108,7 @@ const test = () => {
         },
         number: {
             required: false,
-            defaultValue : 'defaultValue',
+            defaultValue: 'defaultValue',
             mlHeader: 'number'
         },
         subject: {
@@ -132,12 +133,12 @@ const test = () => {
         },
         RSBillOfLadingID: {
             required: false,
-            defaultValue : 'defaultValue',
+            defaultValue: 'defaultValue',
             mlHeader: 'RS ზედდნადები - ID'
         },
         RSInvoiceN: {
             required: false,
-            defaultValue : 'defaultValue',
+            defaultValue: 'defaultValue',
             mlHeader: 'RS ანგარიშ-ფაქტურა - N'
         },
         User: {
@@ -146,12 +147,10 @@ const test = () => {
         },
 
     };
-    const documentsArr = ['sf-full.xlsx','sf-missingHeaders.xlsx']
+    // ['sf-full.xlsx', 'sf-missingHeaders.xlsx']
     let filePath = path.normalize(path.join(__dirname, '..', 'sf-full.xlsx'))
-   console.log('გადავეცი ფუნქცია recordsFromExcel - ს ფაილი : ' + filePath )
+    console.log('reading file - : ' + filePath)
     recordsFromExcel(null, null, null, filePath, sheetNames, excelSFFields, null, null, null)
-
-
 }
 
 test()

@@ -5,6 +5,7 @@ import is from 'is';
 import xlsx from 'xlsx';
 
 import gssLanguage from '@gss-llc/gss-language.gss.ge';
+import '@gss-llc/gss-common.gss.ge';
 import XLSX from "xlsx";
 
 const sendErrorEMail = (req, res, next, sender, subject, message) => {
@@ -63,69 +64,64 @@ const getRecordAllHeaders = (recordDescriptionByFields, language) => {
     return recordHeaders;
 };
 
-const getHeaderRawIndex = (recordDescriptionByFields, sheet) => {
-    const mlHeadersArray = Object.keys(recordDescriptionByFields)
-        .filter(key => recordDescriptionByFields[key].required === true)
-        .map(key => arrify(recordDescriptionByFields[key].mlHeader));
-
-    // გადმოეცემა mlHeaders - დაფილტრული required - ის მიხედვით მასივის მასივი და შიტი
-
-    if (!sheet['!ref']) {
-        // ვამოწმებ თუ შიტი ცარიელია
-        // sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelCanNotFindSheet, {language: language}), [`'${sheetNames.join('\', \'')}'`]));
-        return;
-    }
-
-    //ეს მჭირდება ციკლისთვის რომ ტყვილად არ იტრიალოს
-    let hasIndexFound = false;
-
-    //დაუფილტრავი ჰედერების მასივები სადაც კეიები არის ენის დასახელება
-    let filteredMlHeadersByLanguage = {};
-    //mlHeader - ის ობიექტების მასივი
-    let mlHeadersObjArray = [];
-    //singleMlHeadersArray - ის დასახელებები რომლებიც არ მოიძებნა ენებში
-    let singleMlHeadersArray = [];
+// გადმოეცემა შიტი, columnsMlHeaders სვეტების სათაურების მასივის მასივი
+const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
     let rawIndex = undefined;
 
-    mlHeadersArray.forEach(headerArr => {
-        headerArr.forEach(header => {
+    // ვამოწმებ თუ შიტი თუ ცარიელია
+    if (!sheet['!ref']) {
+        // sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelCanNotFindSheet, {language: language}), [`'${sheetNames.join('\', \'')}'`]));
+        return rawIndex;
+    }
+
+    // მიღებული columnsMlHeaders-იდან ენების მიხედვით იქმნება Headers-ები
+    let columnsMlHeadersByLanguage = {};
+    // მიღებული columnsMlHeaders-იდან მიიღება columnsMlHeadersObjects ml ობიექტების მასივი
+    let columnsMlHeadersObjects = [];
+    // allLanguageColumnsHeaders - ის დასახელებები რომლებიც არ მოიძებნა ენებში
+    let allLanguageColumnsHeaders = [];
+
+    columnsMlHeaders.forEach(columnMlHeaders => {
+        columnMlHeaders.forEach(header => {
             // აქ ვამოწმებთ თუ header სტრიქონია, მაშინ ვიღებთ შესაბამის gssLanguage.mlStrings - დან შესაბამის ობიექტს
             // ხოლო header სტრიქონი თუ არაა მაშინ ობიექტია და ვიღებს ამ ობიექტს
             let mlHeader = is.string(header) ? gssLanguage.mlStrings[header] : header;
             if (mlHeader) {
-                mlHeadersObjArray.push(mlHeader)
+                columnsMlHeadersObjects.push(mlHeader)
             } else {
-                singleMlHeadersArray.push(header)
+                allLanguageColumnsHeaders.push(header)
             }
         });
     })
 
-    if (mlHeadersObjArray.length > 0) {
-        // mlHeadersObjArray- ობიექტებიდან ვიღე კეიებს და ვაბრუნებ მასივის მასივად. ვიღებ უნიკალურს
-        const uniqKeys = _.intersection(...mlHeadersObjArray.map(obj => Object.keys(obj)));
+    // [[სახელი, დასახელება], [დებეტი, დებეტური ანგარიში]]
+    // [[ka, en], [ka, ru]] => [ka]
+    //
 
-        //ვამოწმებ თუ მაქვს უნიკალური კეიები
-        if (_.isEmpty(uniqKeys)) {
-            // sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelCanNotFindSheet, {language: language}), [`'${sheetNames.join('\', \'')}'`]));
-            return;
-        }
-        // mlHeadersObjArray - ს ვფილტრავ უნიკალური კეიების მიხედვით
-        mlHeadersObjArray = mlHeadersObjArray.map(obj => _.pick(obj, uniqKeys));
+    // columnsMlHeadersObjects- ობიექტებიდან ვიღე კეიებს და ვაბრუნებ მასივის მასივად. ვიღებ უნიკალურს
+    const uniqLanguages = _.intersection(...columnsMlHeadersObjects.map(columnMlHeadersObjects => Object.keys(columnMlHeadersObjects)));
+
+    //ვამოწმებ თუ მაქვს უნიკალური კეიები
+    if (!uniqLanguages.length) {
+        // sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelCanNotFindSheet, {language: language}), [`'${sheetNames.join('\', \'')}'`]));
+        return;
     }
+    // columnsMlHeadersObjects - ს ვფილტრავ უნიკალური კეიების მიხედვით
+    columnsMlHeadersObjects = columnsMlHeadersObjects.map(columnMlHeadersObjects => _.pick(columnMlHeadersObjects, uniqLanguages));
 
-    //აქ ამ ობიექტს ვაქცევ ობიექტად სადაც filed - ის კეიები არის ამ ობიექტში არსებული ობიექტების კეიები
+    // აქ ამ ობიექტს ვაქცევ ობიექტად სადაც filed - ის კეიები არის ამ ობიექტში არსებული ობიექტების კეიები
     // თუ კეი არსებობს ვალუეს ვაუფუშავ თუ არ არსებობს ის კეი მივათხრი ამ კეის და იმის ვალუეს დავუფუშავ
-    filteredMlHeadersByLanguage = _.transform(mlHeadersObjArray, (result, obj) => {
-        _.forEach(obj, (value, key) => {
+    columnsMlHeadersByLanguage = _.transform(columnsMlHeadersObjects, (result, columnMlHeadersObjects) => {
+        _.forEach(columnMlHeadersObjects, (value, key) => {
             (result[key] || (result[key] = [])).push(value ? value : '');
         });
-    }, filteredMlHeadersByLanguage);
+    }, columnsMlHeadersByLanguage);
 
     // აქ ვართიენებ იმ მოსულ ელემენტებს რომლებიც არ იძებნება ენებში და required - ია
-    Object.values(filteredMlHeadersByLanguage).forEach(mlHeaders => {
-        mlHeaders.push(...singleMlHeadersArray);
+    Object.values(columnsMlHeadersByLanguage).forEach(mlHeaders => {
+        mlHeaders.push(...allLanguageColumnsHeaders);
     })
-    Object.values(filteredMlHeadersByLanguage).some(headers => {
+    Object.values(columnsMlHeadersByLanguage).some(headers => {
         // ვთრეულობ ბოლო როუს და დავრბივარ შიგნით
         return _.range(XLSX.utils.decode_range(sheet['!ref']).e.r).some(rowNum => {
             // ვთრეულობ ქოლუმნს
@@ -148,9 +144,8 @@ const getHeaderRawIndex = (recordDescriptionByFields, sheet) => {
 }
 
 // აბრუნებს ექსელის ჩანაწერების მასივს ან შეცდომის შემთხვევაში აგზავნის შესაბამის მეილს და აბრუნებს undefined
-export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields, language, errorMailSender, errorMailSubject, cb) => {
+export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields, language, errorMailSender, errorMailSubject) => {
     language = language || 'en';
-    console.log('შევედი ფუნქცია recordsFromExcel - ში \n')
     const excelWorkbook = xlsx.readFile(excelPath);
 
     // sheetNames - გადმოცემული შიტის დასახელებებიდან მხოლოდ ერთი დასახელების შიტი უნდა მოიძებნოს
@@ -163,13 +158,11 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
     });
 
     if (sheets.length === 0) {
-        console.log('შიტი არ მოიძებნა მისამართით : ' + excelPath);
-        //sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelCanNotFindSheet, {language: language}), [`'${sheetNames.join('\', \'')}'`]));
+        sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelCanNotFindSheet, {language: language}), [`'${sheetNames.join('\', \'')}'`]));
         return;
     }
 
     if (sheets.length > 1) {
-        console.log('Excel ფაილში აუცილებელია არსებობდეს მხოლოდ ერთი ჩანართი დასახელებით')
         sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelOneSheetRequired, {language: language}), [sheetNames.join(` ${gssLanguage.lString(gssLanguage.mlStrings['or'], {language: language})} `)]));
         return;
     }
@@ -177,8 +170,12 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
 
 
     //ამ შემთხვევაში ვეძახი უბრალოდ ეს კოდი ამოვარდება აქედან რადგან გადმოეცემა
-    const headerRawIndex = getHeaderRawIndex(recordDescriptionByFields, sheet);
+    const headerRawIndex =
+        getHeaderRawIndex(sheet,
+            Object.keys(recordDescriptionByFields).filter(key => recordDescriptionByFields[key].required === true)
+                .map(key => arrify(recordDescriptionByFields[key].mlHeader)));
     if (!headerRawIndex) {
+        // todo: შეტყობინებაა მოსაფიქრებელი
         console.log('შიტში არ მოძებნა ჰედების row')
         return;
     }
