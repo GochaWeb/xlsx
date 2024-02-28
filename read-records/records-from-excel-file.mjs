@@ -72,19 +72,19 @@ const getRecordAllHeaders = (recordDescriptionByFields, language) => {
 
     // ჩანაწერის field-ისთვის იღებს ამ ფილდში მითითებული mlHeader-ის შესაბამის mlStrings-ის ობიექტს
     // თუ mlHeader სტრიქონია, ხოლო თუ mlHeader სტრიქონი არ არის მაშინ mlHeader უნდა იყოს თითონ mlString ობიექტი
-    console.log('გავიარე ფუნქცია : getRecordAllHeaders \n დავაბრუნე ჰედერები :')
-    console.log(recordHeaders)
+    // console.log('გავიარე ფუნქცია : getRecordAllHeaders \n დავაბრუნე ჰედერები :')
+    // console.log(recordHeaders)
     return recordHeaders;
 };
 
 // გადმოეცემა შიტი, columnsMlHeaders სვეტების სათაურების მასივის მასივი
 const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
-    let rawIndex = undefined;
+
 
     // ვამოწმებ თუ შიტი თუ ცარიელია
     if (!sheet['!ref']) {
         // sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelCanNotFindSheet, {language: language}), [`'${sheetNames.join('\', \'')}'`]));
-        return rawIndex;
+        return;
     }
 
     // მიღებული columnsMlHeaders-იდან ენების მიხედვით იქმნება Headers-ები
@@ -95,65 +95,97 @@ const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
     let allLanguageColumnsHeaders = [];
 
     columnsMlHeaders.forEach(columnMlHeaders => {
+        let subAllLanguageColumnsHeaders = [];
         columnMlHeaders.forEach(header => {
             // აქ ვამოწმებთ თუ header სტრიქონია, მაშინ ვიღებთ შესაბამის gssLanguage.mlStrings - დან შესაბამის ობიექტს
             // ხოლო header სტრიქონი თუ არაა მაშინ ობიექტია და ვიღებს ამ ობიექტს
             let mlHeader = is.string(header) ? gssLanguage.mlStrings[header] : header;
             if (mlHeader) {
                 columnsMlHeadersObjects.push(mlHeader)
+                subAllLanguageColumnsHeaders.push(mlHeader)
             } else {
-                allLanguageColumnsHeaders.push(header)
+                subAllLanguageColumnsHeaders.push(header)
             }
         });
+        if (subAllLanguageColumnsHeaders.length !== 0) {
+            allLanguageColumnsHeaders.push(subAllLanguageColumnsHeaders);
+        } else {
+            console.log('ერთ -ერთი mlHeader - ცარიელია')
+        }
     })
-
-    // [[სახელი, დასახელება], [დებეტი, დებეტური ანგარიში]]
-    // [[ka, en], [ka, ru]] => [ka]
-    //
 
     // columnsMlHeadersObjects- ობიექტებიდან ვიღე კეიებს და ვაბრუნებ მასივის მასივად. ვიღებ უნიკალურს
     const uniqLanguages = _.intersection(...columnsMlHeadersObjects.map(columnMlHeadersObjects => Object.keys(columnMlHeadersObjects)));
 
-    //ვამოწმებ თუ მაქვს უნიკალური კეიები
-    if (!uniqLanguages.length) {
-        // sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelCanNotFindSheet, {language: language}), [`'${sheetNames.join('\', \'')}'`]));
-        return;
-    }
-    // columnsMlHeadersObjects - ს ვფილტრავ უნიკალური კეიების მიხედვით
-    columnsMlHeadersObjects = columnsMlHeadersObjects.map(columnMlHeadersObjects => _.pick(columnMlHeadersObjects, uniqLanguages));
 
-    // აქ ამ ობიექტს ვაქცევ ობიექტად სადაც filed - ის კეიები არის ამ ობიექტში არსებული ობიექტების კეიები
-    // თუ კეი არსებობს ვალუეს ვაუფუშავ თუ არ არსებობს ის კეი მივათხრი ამ კეის და იმის ვალუეს დავუფუშავ
-    columnsMlHeadersByLanguage = _.transform(columnsMlHeadersObjects, (result, columnMlHeadersObjects) => {
-        _.forEach(columnMlHeadersObjects, (value, key) => {
-            (result[key] || (result[key] = [])).push(value ? value : '');
-        });
-    }, columnsMlHeadersByLanguage);
-
-    // აქ ვართიენებ იმ მოსულ ელემენტებს რომლებიც არ იძებნება ენებში და required - ია
-    Object.values(columnsMlHeadersByLanguage).forEach(mlHeaders => {
-        mlHeaders.push(...allLanguageColumnsHeaders);
+    let transformedAllLanguageColumnsHeaders = [];
+    allLanguageColumnsHeaders.forEach(allLanguageColumnHeaders => {
+        let singleHeaderOrObjectHeader = allLanguageColumnHeaders.map(header => {
+            if (is.string(header)) {
+                const obj = {};
+                uniqLanguages.forEach(language => {
+                    obj[language] = header;
+                });
+                return obj;
+            }
+            return header;
+        })
+        transformedAllLanguageColumnsHeaders.push(singleHeaderOrObjectHeader);
     })
-    Object.values(columnsMlHeadersByLanguage).some(headers => {
-        // ვთრეულობ ბოლო როუს და დავრბივარ შიგნით
-        return _.range(XLSX.utils.decode_range(sheet['!ref']).e.r).some(rowNum => {
-            // ვთრეულობ ქოლუმნს
-            return _.range(XLSX.utils.decode_range(sheet['!ref']).e.c).some(colNum => {
-                // აქ ვიღებ კონკრეტულ უჯრას ანუ cell და ამ უჯრის მნიშვნელობა თუ დაემთხვა
-                // ჰედერების მასივში არსებული რომელიმეს მნიშვნელობას ვაბრუნებ ინდექსს
-                const cell = sheet[XLSX.utils.encode_cell({r: rowNum, c: colNum})];
-                if (cell && headers.includes(cell.v)) {
-                    rawIndex = rowNum + 1;
-                    return true;
+
+    allLanguageColumnsHeaders = transformedAllLanguageColumnsHeaders;
+
+    uniqLanguages.forEach(key => {
+        columnsMlHeadersByLanguage[key] = [];
+        allLanguageColumnsHeaders.forEach(allLanguageColumnHeaders => {
+            let subResult = []
+            allLanguageColumnHeaders.forEach(allLanguageColumnHeader => {
+                subResult.push(allLanguageColumnHeader[key])
+            })
+            columnsMlHeadersByLanguage[key].push(subResult)
+        })
+    })
+
+    Object.keys(columnsMlHeadersByLanguage).forEach(key => {
+        columnsMlHeadersByLanguage[key].forEach(arr => {
+            for (let rowNum = 0; rowNum < XLSX.utils.decode_range(sheet['!ref']).e.r; rowNum++) {
+                for (let colNum = 0; colNum < XLSX.utils.decode_range(sheet['!ref']).e.c; colNum++) {
+                    const cell = sheet[XLSX.utils.encode_cell({r: rowNum, c: colNum})];
+                    if (cell && arr.includes(cell.v)) {
+                        if (!arr.includes(true)) {
+                            arr.push(true)
+                        }
+                        arr.push({
+                            cellValue: cell.v,
+                            rawIndex: xlsx.utils.decode_range(xlsx.utils.encode_cell({r: rowNum, c: colNum})).s.r
+                        });
+                    }
                 }
-                return false;
-            });
+            }
         });
     });
-    // შეიძლება შეტყობინების დაბრუნებაც თუ ინდექსი undefined - ია
-    //ამ ფუნქციამ შეიძლება დააბრუნოს undefined თუ შიტი ცარიელია ან ვერ მოიძებნა შიტში ჰედერები
-    console.log('გავიარე ფუნქცია : getHeaderRawIndex \n დავაბრუნე ჰედერების row - ს ინდექსი : ' + rawIndex)
-    return rawIndex;
+
+
+    let HeaderRawValueObj = [];
+    Object.keys(columnsMlHeadersByLanguage).forEach(key => {
+        if (columnsMlHeadersByLanguage[key].every(innerArray => innerArray.includes(true))) {
+            columnsMlHeadersByLanguage[key].forEach(item => {
+                item.forEach(el => {
+                    if (is.object(el)) {
+                        HeaderRawValueObj.push(el)
+                    }
+                })
+            })
+        }
+    })
+
+    let rowIndexByColumnHeader = _.groupBy(HeaderRawValueObj, 'cellValue')
+    Object.keys(rowIndexByColumnHeader).forEach(key => {
+        rowIndexByColumnHeader[key] = rowIndexByColumnHeader[key].map(obj => obj.rawIndex)
+    })
+
+    console.log(_.intersection(...Object.values(rowIndexByColumnHeader)))
+    return _.intersection(...Object.values(rowIndexByColumnHeader));
 }
 
 // აბრუნებს ექსელის ჩანაწერების მასივს ან შეცდომის შემთხვევაში აგზავნის შესაბამის მეილს და აბრუნებს undefined
@@ -201,15 +233,15 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
         nonAccessibleRecords = [];
     let recordAllLHeaders = getRecordAllHeaders(recordDescriptionByFields);
     const excelHeaders = xlsx.utils.sheet_to_json(sheet, {raw: false, header: 1, range: rangeForExcelHeaders})[0];
-    console.log('recordsFromExcel -  ის ფუნქციაში მივიღე ექსელის ყველა ჰედერეი რეინჯიდან : ' + rangeForExcelHeaders)
-    console.log(excelHeaders)
+    // console.log('recordsFromExcel -  ის ფუნქციაში მივიღე ექსელის ყველა ჰედერეი რეინჯიდან : ' + rangeForExcelHeaders)
+    // console.log(excelHeaders)
     const excelRecords = xlsx.utils.sheet_to_json(sheet, {
         raw: true,
         blankrows: true,
         range: xlsx.utils.decode_range(rangeForExcelRecords)
     });
-    console.log('recordsFromExcel -  ის ფუნქციაში მივიღე ექსელის ყველა ჩანაწერი რეინჯიდან : ' + rangeForExcelRecords)
-    console.log(excelRecords)
+    // console.log('recordsFromExcel -  ის ფუნქციაში მივიღე ექსელის ყველა ჩანაწერი რეინჯიდან : ' + rangeForExcelRecords)
+    // console.log(excelRecords)
     // თუ ცარიელი ექსელია ვბრუნდები
     if (excelRecords.length === 0) {
         console.log('შიტი ცარიელია')
@@ -327,7 +359,6 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
 
         return;
     }
-    console.log('გავიარე ფუნქცია recordsFromExcel - ს  დავაბრუნე საბოლოო ჩანაწერები : ')
-    console.log(records)
+
     return records;
 };

@@ -72,7 +72,7 @@ const test = () => {
         },
         debitAccountName: {
             required: true,
-            mlHeader: 'დებეტური ანგარიშის სახელი'
+            mlHeader: ['დებეტური ანგარიშის სახელი','debitAccountName']
         },
         debitAccountCurrency: {
             required: true,
@@ -83,27 +83,27 @@ const test = () => {
             mlHeader: 'კრედიტული ანგარიშის ნომერი'
         },
         creditAccountName: {
-            required: true,
+            required: false,
             mlHeader: 'კრედიტული ანგარიშის სახელი'
         },
         creditAccountCurrency: {
-            required: true,
+            required: false,
             mlHeader: 'კრედიტული ანგარიშის ვალუტა'
         },
         _amount: {
             required: true,
-            mlHeader: '_amount'
+            mlHeader: ['_amount', 'money']
         },
         currency: {
-            required: true,
+            required: false,
             mlHeader: 'Currency'
         },
         rate: {
-            required: true,
+            required: false,
             mlHeader: 'Rate'
         },
         amountInMainCurrency: {
-            required: true,
+            required: false,
             mlHeader: 'amountInMainCurrency'
         },
         number: {
@@ -128,7 +128,7 @@ const test = () => {
             mlHeader: 'executed'
         },
         ID: {
-            required: true,
+            required: false,
             mlHeader: 'ID'
         },
         RSBillOfLadingID: {
@@ -148,7 +148,7 @@ const test = () => {
 
     };
     // ['sf-full.xlsx', 'sf-missingHeaders.xlsx']
-    let filePath = path.normalize(path.join(__dirname, '..', 'sf-full.xlsx'))
+    let filePath = path.normalize(path.join(__dirname, '..', 'test.xlsx'))
     console.log('reading file - : ' + filePath)
     recordsFromExcel(null, null, null, filePath, sheetNames, excelSFFields, null, null, null)
 }
