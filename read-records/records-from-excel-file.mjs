@@ -8,6 +8,19 @@ import gssLanguage from '@gss-llc/gss-language.gss.ge';
 import '@gss-llc/gss-common.gss.ge';
 import XLSX from "xlsx";
 
+// [[subject], [{ka: 'დებეტი', en: 'debit'}, 'debit_account / ეს არ არის ml სტინგებში'], ....]
+// მიუხედავად იმისა რომ ml სტრინგებში არსებობს რუსულადაც [ka: 'თემა', en: 'subject', ru: 'Тема']
+// საბოლოო ჯამში უნდა მივიღოთ საერთო ენებით ობიექტების მასივი
+// [[ka: 'თემა', en: 'subject'], [{ka: 'დებეტი', en: 'debit'}, {ka: 'debit_account', en: 'debit_account'}], ....]
+// ამ მაგალითში პირველ სვეტს ერთი დასახელება 'თემა' აქვს მეორე სვეტს ორი 'დებეტი' და 'debit_account'
+// მოსაძებნია ის სტრიქონი რომელიც შეიცავს თითოეული სვეტისთვის ერთ რომელიმე ენაზე ერთ-ერთ დასახელებას მაინც
+//
+// [თემა, დებეტი, debit_account]
+//
+// {ka: [[თემა], [დებეტი, debit_account]],
+//
+//
+//
 const sendErrorEMail = (req, res, next, sender, subject, message) => {
     console.log('--- sendErrorEMail');
     console.log(message);
