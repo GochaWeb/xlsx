@@ -148,7 +148,7 @@ const test = () => {
 
     };
     // ['sf-full.xlsx', 'sf-missingHeaders.xlsx']
-    let filePath = path.normalize(path.join(__dirname, '..', 'test.xlsx'))
+    let filePath = path.normalize(path.join(__dirname, '..', 'sf-full.xlsx'))
     console.log('reading file - : ' + filePath)
     recordsFromExcel(null, null, null, filePath, sheetNames, excelSFFields, null, null, null)
 }
