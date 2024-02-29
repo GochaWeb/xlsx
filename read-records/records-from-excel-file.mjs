@@ -79,8 +79,6 @@ const getRecordAllHeaders = (recordDescriptionByFields, language) => {
 
 // გადმოეცემა შიტი, columnsMlHeaders სვეტების სათაურების მასივის მასივი
 const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
-
-
     // ვამოწმებ თუ შიტი თუ ცარიელია
     if (!sheet['!ref']) {
         // sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelCanNotFindSheet, {language: language}), [`'${sheetNames.join('\', \'')}'`]));
@@ -94,60 +92,65 @@ const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
     // allLanguageColumnsHeaders - ის დასახელებები რომლებიც არ მოიძებნა ენებში
     let allLanguageColumnsHeaders = [];
 
-    columnsMlHeaders.forEach(columnMlHeaders => {
-        let subAllLanguageColumnsHeaders = [];
-        columnMlHeaders.forEach(header => {
+    if (columnsMlHeaders.some(columnMlHeaders => {
+        columnMlHeaders = arrify(columnMlHeaders);
+        if (!columnMlHeaders.length) {
+            console.log('ერთ -ერთი mlHeader - ცარიელია');
+            return true;
+        }
+
+        let columnMlHeadersObjects = arrify(columnMlHeaders).map(header => {
             // აქ ვამოწმებთ თუ header სტრიქონია, მაშინ ვიღებთ შესაბამის gssLanguage.mlStrings - დან შესაბამის ობიექტს
             // ხოლო header სტრიქონი თუ არაა მაშინ ობიექტია და ვიღებს ამ ობიექტს
-            let mlHeader = is.string(header) ? gssLanguage.mlStrings[header] : header;
-            if (mlHeader) {
-                columnsMlHeadersObjects.push(mlHeader)
-                subAllLanguageColumnsHeaders.push(mlHeader)
+            let mlHeaderObject = is.string(header) ? gssLanguage.mlStrings[header] : header;
+            if (mlHeaderObject) {
+                columnsMlHeadersObjects.push(mlHeaderObject)
+                columnMlHeadersObjects.push(mlHeaderObject)
             } else {
-                subAllLanguageColumnsHeaders.push(header)
+                columnMlHeadersObjects.push(header)
             }
         });
-        if (subAllLanguageColumnsHeaders.length !== 0) {
-            allLanguageColumnsHeaders.push(subAllLanguageColumnsHeaders);
-        } else {
-            console.log('ერთ -ერთი mlHeader - ცარიელია')
-        }
-    })
+
+        allLanguageColumnsHeaders.push(columnMlHeadersObjects);
+    })) {
+        // todo: დაბრუნება არაა საჭირო ფუნქციიდან?
+        return;
+    }
 
     // columnsMlHeadersObjects- ობიექტებიდან ვიღე კეიებს და ვაბრუნებ მასივის მასივად. ვიღებ უნიკალურს
     const uniqLanguages = _.intersection(...columnsMlHeadersObjects.map(columnMlHeadersObjects => Object.keys(columnMlHeadersObjects)));
-
     
-    // სტრინგის ჰედერებს გადრავქმნი ობიექტად uniqLanguages - ის მიხედვით, ხოლო ობიექტებიდან ვიღებ ელემენტებს uniqLanguages - ის მიხედვით და ვაბრუნებ ობიექტს
+    // სტრინგის ჰედერებს გარდავქმნი ობიექტად uniqLanguages - ის მიხედვით, ხოლო ობიექტებიდან ვიღებ ელემენტებს uniqLanguages - ის მიხედვით და ვაბრუნებ ობიექტს
     // const obj = { a: { b: 1 }, c: 2 }; const picked = _.pick(obj, 'a.b');  Output: { a: { b: 1 } } აბრუნებს ობიექტს
     // პიკს შეგიძლია გადასცე სტრინგი, სტრინგების მასივი, და ასევე თითოეულია პარამეტრებათ
-    let transformedAllLanguageColumnsHeaders = [];
-    allLanguageColumnsHeaders.forEach(allLanguageColumnHeaders => {
-        let singleHeaderOrObjectHeader = allLanguageColumnHeaders.map(header => {
+    allLanguageColumnsHeaders = allLanguageColumnsHeaders.map(allLanguageColumnHeaders => {
+        return allLanguageColumnHeaders.map(header => {
             if (is.string(header)) {
-                const obj = {};
+                const mlHeaderObject = {};
                 uniqLanguages.forEach(language => {
-                    obj[language] = header;
+                    mlHeaderObject[language] = header;
                 });
-                return obj;
+                return mlHeaderObject;
             }
             return _.pick(header, uniqLanguages);
         })
-        transformedAllLanguageColumnsHeaders.push(singleHeaderOrObjectHeader);
     })
-    allLanguageColumnsHeaders = transformedAllLanguageColumnsHeaders;
 
     // ენების მიხედვითვით ვაკეთებ მასივის მასივებს და შესაბამის ენის მასივში ვფუშავ სტრიქონებს
     uniqLanguages.forEach(key => {
-        columnsMlHeadersByLanguage[key] = [];
-        allLanguageColumnsHeaders.forEach(allLanguageColumnHeaders => {
-            let tempArr = []
-            allLanguageColumnHeaders.forEach(allLanguageColumnHeader => {
-                tempArr.push(allLanguageColumnHeader[key])
-            })
-            columnsMlHeadersByLanguage[key].push(tempArr)
+        columnsMlHeadersByLanguage[key] = allLanguageColumnsHeaders.map(allLanguageColumnHeaders => {
+            return allLanguageColumnHeaders.map(allLanguageColumnHeader => allLanguageColumnHeader[key]);
         })
     })
+
+    {
+        columnMlHeadersByLanguage
+        fiound:
+
+    } ''.slice()
+
+    copyColumnsMlHeadersByLanguage = columnsMlHeadersByLanguage.
+
     // ენების მიხედვით გაკეთებულ მასივებში დავრბივარ, თუ ამ კონკრეტულ მასივში(columnMlHeadersByLanguage) ვიპოვე
     // უჯრის მნიშვნელობა ამ მასივში ვფუშავ true - ს და ობიექტს ველიუთი და როუ ინდექსით
     Object.keys(columnsMlHeadersByLanguage).forEach(key => {
@@ -227,7 +230,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
     const headerRawIndex =
         getHeaderRawIndex(sheet,
             Object.keys(recordDescriptionByFields).filter(key => recordDescriptionByFields[key].required === true)
-                .map(key => arrify(recordDescriptionByFields[key].mlHeader)));
+                .map(key => recordDescriptionByFields[key].mlHeader));
     if (!headerRawIndex) {
         // todo: შეტყობინებაა მოსაფიქრებელი
         console.log('შიტში არ მოძებნა ჰედების row')
