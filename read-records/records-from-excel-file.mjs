@@ -133,16 +133,14 @@ const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
             }
             return _.pick(header, uniqLanguages);
         })
-    })
-// console.log('---allLanguageColumnsHeaders')
-// console.log(allLanguageColumnsHeaders)
+    });
 
     // ენების მიხედვითვით ვაკეთებ მასივის მასივებს და შესაბამის ენის მასივში ვფუშავ სტრიქონებს
     uniqLanguages.forEach(key => {
         columnsMlHeadersByLanguage[key] = allLanguageColumnsHeaders.map(allLanguageColumnHeaders => {
             return allLanguageColumnHeaders.map(allLanguageColumnHeader => allLanguageColumnHeader[key]);
         })
-    })
+    });
 
     // ვიღებ ექსელის რეკორდებს
     const excelRecords = xlsx.utils.sheet_to_json(sheet, {
@@ -150,58 +148,85 @@ const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
         blankrows: true,
         header: 1,
         range: sheet['!ref']
-    })
+    });
 
-    // foundedLangValRaw - ში ვაყალიბებ ობიექტს ნაპოვნ ჰედერს და როუინდექს ენების მიხედვით
-    const foundedLangValRaw = {}
-    // ენების მიხევით დავრბივარ mlHeader - ის მასივებში და ვამოწმებ თითოეულ ელემენტი თუ შედის excelRecords - ის მასივში
-    Object.keys(columnsMlHeadersByLanguage).forEach(language => {
-        foundedLangValRaw[language] = [];
-        excelRecords.forEach((headers, rawIndex) => {
-            columnsMlHeadersByLanguage[language].forEach(columnMlHeadersByLanguage => {
-                columnMlHeadersByLanguage.forEach(mlHeader => {
-                    if (headers.includes(mlHeader)) {
-                        foundedLangValRaw[language].push({rawIndex: rawIndex, Header: mlHeader});
+    let result;
+    if (excelRecords.some((rawValues, rawIndex) => {
+        const foundHeaders = [];
+        if (uniqLanguages.some(language => {
+            let columnsMlHeadersByLanguage = columnsMlHeadersByLanguage[language].slice();
+            return rawValues.some(value => {
+                columnsMlHeadersByLanguage.some((columnMlHeadersByLanguage, columnMlHeadersByLanguageIndex) => {
+                    if (columnMlHeadersByLanguage.includes(value)) {
+                        foundHeaders.push(value);
+
+                        columnsMlHeadersByLanguage = columnsMlHeadersByLanguage.splice(columnMlHeadersByLanguageIndex, 1);
+                        return true;
                     }
                 });
+
+                if (!columnsMlHeadersByLanguage.length) {
+                    return true;
+                }
             });
-        });
-    });
-
-     // ნაპოვნი ჰედერები შეიძლება მეორდებოდეს foundedLangValRaw - ში ამიტომ ვჯგუფავ ჰედერების მიხედვით და
-     // ამ ჰედერების rawIndex - ს ვიღებ მასივებად
-    const foundedHeaderWithIndexByLanguage = {};
-    Object.keys(foundedLangValRaw).forEach(language => {
-        const grouped = _.groupBy(foundedLangValRaw[language], 'Header');
-        foundedHeaderWithIndexByLanguage[language] = {};
-        Object.keys(grouped).forEach(header => {
-            foundedHeaderWithIndexByLanguage[language][header] = grouped[header].map(obj => obj.rawIndex);
-        });
-    });
-
-    // ვიღებ foundedHeaderWithIndexByLanguage - ში არსებულ ყველა ჰედერს რამდენი ვიპოვე  და
-    // columnsMlHeadersByLanguage - ში რამდენი მასივი მაქვს თუ რაოდენობრივად დაემთხვა ერთმანეთს
-    // ესეიგი კონკრეტულ ენაზე ყველა ჰედერი ვიპოვე ვიმახსოვრებ ენებს
-    const whichLanguageFounded = []
-    Object.keys(foundedHeaderWithIndexByLanguage).forEach(language => {
-        const languageIndexCount = Object.keys(foundedHeaderWithIndexByLanguage[language]).length;
-        const ColumnsLanguageCount = columnsMlHeadersByLanguage[language].length;
-        if (languageIndexCount === ColumnsLanguageCount) {
-            whichLanguageFounded.push(language)
-        } else {
-            return rawIndex;
+        })) {
+            result = {foundHeaders, rawIndex};
+            return true;
         }
-    });
+    })) {
+        return result;
+    }
 
-    // რა ენაზე ვიპოვე ეს ჰედერები იმ ენებში დავრბივარ და ვიღებ ინდექსების მასივებს ვიღებ უნუკალურს
-    whichLanguageFounded.forEach(language => {
-        if (foundedHeaderWithIndexByLanguage[language] !== undefined)
-            rawIndex = _.intersection(...Object.values(foundedHeaderWithIndexByLanguage[language]))
+    return undefined;
 
-    })
-
-    console.log(rawIndex)
-    return rawIndex;
+    // // foundedValueAndRawIndexByLanguage - ში ვაყალიბებ ობიექტს ნაპოვნ ჰედერს და როუინდექს ენების მიხედვით
+    // const foundedValueAndRawIndexByLanguage = {}
+    // // ენების მიხევით დავრბივარ mlHeader - ის მასივებში და ვამოწმებ თითოეულ ელემენტი თუ შედის excelRecords - ის მასივში
+    // Object.keys(columnsMlHeadersByLanguage).forEach(language => {
+    //     foundedValueAndRawIndexByLanguage[language] = [];
+    //     excelRecords.forEach((rowValues, rawIndex) => {
+    //         columnsMlHeadersByLanguage[language].forEach(columnMlHeadersByLanguage => {
+    //             columnMlHeadersByLanguage.forEach(mlHeader => {
+    //                 if (rowValues.includes(mlHeader)) {
+    //                     foundedValueAndRawIndexByLanguage[language].push({rawIndex: rawIndex, Header: mlHeader});
+    //                 }
+    //             });
+    //         });
+    //     });
+    // });
+    //
+    //  // ნაპოვნი ჰედერები შეიძლება მეორდებოდეს foundedValueAndRawIndexByLanguage - ში ამიტომ ვჯგუფავ ჰედერების მიხედვით და
+    //  // ამ ჰედერების rawIndex - ს ვიღებ მასივებად
+    // const foundedHeaderWithIndexByLanguage = {};
+    // Object.keys(foundedValueAndRawIndexByLanguage).forEach(language => {
+    //     const grouped = _.groupBy(foundedValueAndRawIndexByLanguage[language], 'Header');
+    //     foundedHeaderWithIndexByLanguage[language] = {};
+    //     Object.keys(grouped).forEach(header => {
+    //         foundedHeaderWithIndexByLanguage[language][header] = grouped[header].map(obj => obj.rawIndex);
+    //     });
+    // });
+    //
+    // // ვიღებ foundedHeaderWithIndexByLanguage - ში არსებულ ყველა ჰედერს რამდენი ვიპოვე  და
+    // // columnsMlHeadersByLanguage - ში რამდენი მასივი მაქვს თუ რაოდენობრივად დაემთხვა ერთმანეთს
+    // // ესეიგი კონკრეტულ ენაზე ყველა ჰედერი ვიპოვე ვიმახსოვრებ ენებს
+    // const whichLanguageFounded = []
+    // Object.keys(foundedHeaderWithIndexByLanguage).forEach(language => {
+    //     const languageIndexCount = Object.keys(foundedHeaderWithIndexByLanguage[language]).length;
+    //     const ColumnsLanguageCount = columnsMlHeadersByLanguage[language].length;
+    //     if (languageIndexCount === ColumnsLanguageCount) {
+    //         whichLanguageFounded.push(language)
+    //     }
+    // });
+    //
+    // // რა ენაზე ვიპოვე ეს ჰედერები იმ ენებში დავრბივარ და ვიღებ ინდექსების მასივებს ვიღებ უნუკალურს
+    // whichLanguageFounded.forEach(language => {
+    //     if (foundedHeaderWithIndexByLanguage[language] !== undefined)
+    //         rawIndex = _.intersection(...Object.values(foundedHeaderWithIndexByLanguage[language]))
+    //
+    // })
+    //
+    // console.log(rawIndex)
+    // return rawIndex;
 }
 
 // აბრუნებს ექსელის ჩანაწერების მასივს ან შეცდომის შემთხვევაში აგზავნის შესაბამის მეილს და აბრუნებს undefined
