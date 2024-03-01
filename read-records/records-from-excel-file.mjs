@@ -78,13 +78,13 @@ const getRecordAllHeaders = (recordDescriptionByFields, language) => {
 
 // გადმოეცემა შიტი, columnsMlHeaders სვეტების სათაურების მასივის მასივი
 const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
+
     // ვამოწმებ თუ შიტი თუ ცარიელია
     if (!sheet['!ref']) {
         // sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelCanNotFindSheet, {language: language}), [`'${sheetNames.join('\', \'')}'`]));
         return;
     }
 
-    let rawIndex = [];
     // მიღებული columnsMlHeaders-იდან ენების მიხედვით იქმნება Headers-ები
     let columnsMlHeadersByLanguage = {};
     // მიღებული columnsMlHeaders-იდან მიიღება columnsMlHeadersObjects ml ობიექტების მასივი
@@ -141,7 +141,7 @@ const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
             return allLanguageColumnHeaders.map(allLanguageColumnHeader => allLanguageColumnHeader[key]);
         })
     });
-
+     
     // ვიღებ ექსელის რეკორდებს
     const excelRecords = xlsx.utils.sheet_to_json(sheet, {
         raw: false,
@@ -154,26 +154,29 @@ const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
     if (excelRecords.some((rawValues, rawIndex) => {
         const foundHeaders = [];
         if (uniqLanguages.some(language => {
-            let columnsMlHeadersByLanguage = columnsMlHeadersByLanguage[language].slice();
+            let copycolumnsMlHeadersByLanguage = columnsMlHeadersByLanguage[language].slice();
             return rawValues.some(value => {
-                columnsMlHeadersByLanguage.some((columnMlHeadersByLanguage, columnMlHeadersByLanguageIndex) => {
+                copycolumnsMlHeadersByLanguage.some((columnMlHeadersByLanguage, columnMlHeadersByLanguageIndex) => {
                     if (columnMlHeadersByLanguage.includes(value)) {
                         foundHeaders.push(value);
 
-                        columnsMlHeadersByLanguage = columnsMlHeadersByLanguage.splice(columnMlHeadersByLanguageIndex, 1);
+                        copycolumnsMlHeadersByLanguage.splice(columnMlHeadersByLanguageIndex, 1);
+
                         return true;
                     }
                 });
 
-                if (!columnsMlHeadersByLanguage.length) {
+                if (!copycolumnsMlHeadersByLanguage.length) {
+
                     return true;
                 }
             });
         })) {
-            result = {foundHeaders, rawIndex};
+            result = { foundHeaders, rawIndex };
             return true;
         }
     })) {
+        console.log(result)
         return result;
     }
 
@@ -239,17 +242,17 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
     sheetNames.forEach(sheetName => {
         const sheet = excelWorkbook.Sheets[sheetName];
         if (sheet) {
-            sheets.push({sheetName: sheetName, sheet})
+            sheets.push({ sheetName: sheetName, sheet })
         }
     });
 
     if (sheets.length === 0) {
-        sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelCanNotFindSheet, {language: language}), [`'${sheetNames.join('\', \'')}'`]));
+        sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelCanNotFindSheet, { language: language }), [`'${sheetNames.join('\', \'')}'`]));
         return;
     }
 
     if (sheets.length > 1) {
-        sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelOneSheetRequired, {language: language}), [sheetNames.join(` ${gssLanguage.lString(gssLanguage.mlStrings['or'], {language: language})} `)]));
+        sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelOneSheetRequired, { language: language }), [sheetNames.join(` ${gssLanguage.lString(gssLanguage.mlStrings['or'], { language: language })} `)]));
         return;
     }
     const sheet = excelWorkbook.Sheets[sheets[0].sheetName];
@@ -260,11 +263,11 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
         getHeaderRawIndex(sheet,
             Object.keys(recordDescriptionByFields).filter(key => recordDescriptionByFields[key].required === true)
                 .map(key => recordDescriptionByFields[key].mlHeader));
-    if (!headerRawIndex) {
-        // todo: შეტყობინებაა მოსაფიქრებელი
-        console.log('შიტში არ მოძებნა ჰედების row')
-        return;
-    }
+    // if (!headerRawIndex) {
+    //     // todo: შეტყობინებაა მოსაფიქრებელი
+    //     console.log('შიტში არ მოძებნა ჰედების row')
+    //     return;
+    // }
 
     const rangeForExcelHeaders = 'A' + headerRawIndex + ':' + 'ZZ' + headerRawIndex;
     const rangeForExcelRecords = 'A' + headerRawIndex + ':' + sheet["!ref"].split(':')[1];
@@ -273,7 +276,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
         requiredHeaders = [],
         nonAccessibleRecords = [];
     let recordAllLHeaders = getRecordAllHeaders(recordDescriptionByFields);
-    const excelHeaders = xlsx.utils.sheet_to_json(sheet, {raw: false, header: 1, range: rangeForExcelHeaders})[0];
+    const excelHeaders = xlsx.utils.sheet_to_json(sheet, { raw: false, header: 1, range: rangeForExcelHeaders })[0];
     // console.log('recordsFromExcel -  ის ფუნქციაში მივიღე ექსელის ყველა ჰედერეი რეინჯიდან : ' + rangeForExcelHeaders)
     // console.log(excelHeaders)
     const excelRecords = xlsx.utils.sheet_to_json(sheet, {
@@ -343,7 +346,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
         // ვამოწმებთ ჩანაწერის record სისწორეს და ვქმნით
         // nonAccessibleRecord - ცუდი ჩანაწერების მასივს
         let nonAccessibleRecordFound = false;
-        let nonAccessibleRecord = {requiredHeader: []};
+        let nonAccessibleRecord = { requiredHeader: [] };
 
         Object.keys(recordDescriptionByFields).forEach(key => {
             const fieldOption = recordDescriptionByFields[key];
@@ -380,7 +383,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
 
     // თუ ცუდი ჩანაწერები მოიძებნა ვაგზავნი მეილს და არაფერს არ ვაბრუნებ
     if (nonAccessibleRecords.length > 0) {
-        let lineText = gssLanguage.lString(gssLanguage.mlStrings['line'], {language: language}).toLowerCase();
+        let lineText = gssLanguage.lString(gssLanguage.mlStrings['line'], { language: language }).toLowerCase();
 
         console.log('ექსელის ფაილში ამ სვეტების მნიშვნელობები არ არის მითითებული')
         console.log(nonAccessibleRecords.map(nonAccessibleRecord => nonAccessibleRecord.requiredHeader.join(', ')));
