@@ -122,26 +122,41 @@ const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
     // სტრინგის ჰედერებს გარდავქმნი ობიექტად uniqLanguages - ის მიხედვით, ხოლო ობიექტებიდან ვიღებ ელემენტებს uniqLanguages - ის მიხედვით და ვაბრუნებ ობიექტს
     // const obj = { a: { b: 1 }, c: 2 }; const picked = _.pick(obj, 'a.b');  Output: { a: { b: 1 } } აბრუნებს ობიექტს
     // პიკს შეგიძლია გადასცე სტრინგი, სტრინგების მასივი, და ასევე თითოეულია პარამეტრებათ
-    allLanguageColumnsHeaders = allLanguageColumnsHeaders.map(allLanguageColumnHeaders => {
-        return allLanguageColumnHeaders.map(header => {
-            if (is.string(header)) {
-                const mlHeaderObject = {};
-                uniqLanguages.forEach(language => {
-                    mlHeaderObject[language] = header;
-                });
-                return mlHeaderObject;
-            }
-            return _.pick(header, uniqLanguages);
-        })
+    // allLanguageColumnsHeaders = allLanguageColumnsHeaders.map(allLanguageColumnHeaders => {
+    //     return allLanguageColumnHeaders.map(header => {
+    //         if (is.string(header)) {
+    //             const mlHeaderObject = {};
+    //             uniqLanguages.forEach(language => {
+    //                 mlHeaderObject[language] = header;
+    //             });
+    //             return mlHeaderObject;
+    //         }
+    //         return _.pick(header, uniqLanguages);
+    //     })
+    // });
+
+    // // ენების მიხედვითვით ვაკეთებ მასივის მასივებს და შესაბამის ენის მასივში ვფუშავ სტრიქონებს
+    // uniqLanguages.forEach(key => {
+    //     columnsMlHeadersByLanguage[key] = allLanguageColumnsHeaders.map(allLanguageColumnHeaders => {
+    //         return allLanguageColumnHeaders.map(allLanguageColumnHeader => allLanguageColumnHeader[key]);
+    //     })
+    // });
+
+    allLanguageColumnsHeaders.forEach(allLanguageColumnHeaders => {
+        allLanguageColumnHeaders.forEach(header => {
+            uniqLanguages.forEach(language => {
+                if (columnsMlHeadersByLanguage[language] === undefined) {
+                    columnsMlHeadersByLanguage[language] = [];
+                }
+                if (is.string(header)) {
+                    columnsMlHeadersByLanguage[language].push(header);
+                } else {
+                    columnsMlHeadersByLanguage[language].push(header[language]);
+                }
+            });
+        });
     });
 
-    // ენების მიხედვითვით ვაკეთებ მასივის მასივებს და შესაბამის ენის მასივში ვფუშავ სტრიქონებს
-    uniqLanguages.forEach(key => {
-        columnsMlHeadersByLanguage[key] = allLanguageColumnsHeaders.map(allLanguageColumnHeaders => {
-            return allLanguageColumnHeaders.map(allLanguageColumnHeader => allLanguageColumnHeader[key]);
-        })
-    });
-     
     // ვიღებ ექსელის რეკორდებს
     const excelRecords = xlsx.utils.sheet_to_json(sheet, {
         raw: false,
@@ -176,7 +191,6 @@ const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
             return true;
         }
     })) {
-        console.log(result)
         return result;
     }
 
