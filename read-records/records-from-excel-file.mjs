@@ -144,8 +144,7 @@ const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
         })
     })
 
-
-    const foundedLangValRaw = []
+    // ვიღებ ექსელის რეკორდებს
     const excelRecords = xlsx.utils.sheet_to_json(sheet, {
         raw: false,
         blankrows: true,
@@ -153,47 +152,54 @@ const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
         range: sheet['!ref']
     })
 
-    // დავრბივარ მასივებში და ვყრი ნაპოვნ მასივს ვიმახსოვრებ ინდექს ენას და ჰედერს
-    Object.keys(columnsMlHeadersByLanguage).forEach(key => {
-        columnsMlHeadersByLanguage[key] = columnsMlHeadersByLanguage[key].filter(array => {
-            return !excelRecords.some((headers, index) => {
-                return headers.some(header => {
-                    if (array.includes(header)) {
-                        foundedLangValRaw.push({language: key, rawIndex: index, cellValue: header});
-                        return true;
+    // foundedLangValRaw - ში ვაყალიბებ ობიექტს ნაპოვნ ჰედერს და როუინდექს ენების მიხედვით
+    const foundedLangValRaw = {}
+    // ენების მიხევით დავრბივარ mlHeader - ის მასივებში და ვამოწმებ თითოეულ ელემენტი თუ შედის excelRecords - ის მასივში
+    Object.keys(columnsMlHeadersByLanguage).forEach(language => {
+        foundedLangValRaw[language] = [];
+        excelRecords.forEach((headers, rawIndex) => {
+            columnsMlHeadersByLanguage[language].forEach(columnMlHeadersByLanguage => {
+                columnMlHeadersByLanguage.forEach(mlHeader => {
+                    if (headers.includes(mlHeader)) {
+                        foundedLangValRaw[language].push({rawIndex: rawIndex, Header: mlHeader});
                     }
-                    return false;
                 });
             });
         });
     });
 
+     // ნაპოვნი ჰედერები შეიძლება მეორდებოდეს foundedLangValRaw - ში ამიტომ ვჯგუფავ ჰედერების მიხედვით და
+     // ამ ჰედერების rawIndex - ს ვიღებ მასივებად
+    const foundedHeaderWithIndexByLanguage = {};
+    Object.keys(foundedLangValRaw).forEach(language => {
+        const grouped = _.groupBy(foundedLangValRaw[language], 'Header');
+        foundedHeaderWithIndexByLanguage[language] = {};
+        Object.keys(grouped).forEach(header => {
+            foundedHeaderWithIndexByLanguage[language][header] = grouped[header].map(obj => obj.rawIndex);
+        });
+    });
 
-    // ვაჯგუფებ ენების მიხედვით
-    let rowIndexByLanguage = _.groupBy(foundedLangValRaw, 'language')
-    Object.keys(rowIndexByLanguage).forEach(key => {
-        rowIndexByLanguage[key] = rowIndexByLanguage[key].map(obj => obj.rawIndex)
-    })
-    // columnsMlHeadersByLanguage - ის , რომელიმე ენის მასივი თუ ცარიელი ესეიგი ყველა ელემენტი ვიპოვე იმ ენაზე
-    // ვიმახსოვრებ ენას
-    const whichLangRowFounded = []
-    Object.keys(columnsMlHeadersByLanguage).forEach(key => {
-        if (columnsMlHeadersByLanguage[key].length === 0) {
-            whichLangRowFounded.push(key)
+    // ვიღებ foundedHeaderWithIndexByLanguage - ში არსებულ ყველა ჰედერს რამდენი ვიპოვე  და
+    // columnsMlHeadersByLanguage - ში რამდენი მასივი მაქვს თუ რაოდენობრივად დაემთხვა ერთმანეთს
+    // ესეიგი კონკრეტულ ენაზე ყველა ჰედერი ვიპოვე ვიმახსოვრებ ენებს
+    const whichLanguageFounded = []
+    Object.keys(foundedHeaderWithIndexByLanguage).forEach(language => {
+        const languageIndexCount = Object.keys(foundedHeaderWithIndexByLanguage[language]).length;
+        const ColumnsLanguageCount = columnsMlHeadersByLanguage[language].length;
+        if (languageIndexCount === ColumnsLanguageCount) {
+            whichLanguageFounded.push(language)
+        } else {
+            return rawIndex;
         }
+    });
+
+    // რა ენაზე ვიპოვე ეს ჰედერები იმ ენებში დავრბივარ და ვიღებ ინდექსების მასივებს ვიღებ უნუკალურს
+    whichLanguageFounded.forEach(language => {
+        if (foundedHeaderWithIndexByLanguage[language] !== undefined)
+            rawIndex = _.intersection(...Object.values(foundedHeaderWithIndexByLanguage[language]))
+
     })
 
-    // თუ ნაპოვნი ინდექსები ერთნაირები არაა
-    if (whichLangRowFounded.length !== 0) {
-        whichLangRowFounded.forEach(language => {
-            if (!rowIndexByLanguage[language].some(index => index !== rowIndexByLanguage[language][0])) {
-                rawIndex.push({language: language, rawIndex: rowIndexByLanguage[language][0]})
-            }
-        })
-    } else {
-        console.log('სათაურები არ მოიძებნა')
-        return;
-    }
     console.log(rawIndex)
     return rawIndex;
 }

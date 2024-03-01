@@ -37,7 +37,7 @@ const excelGoodFields = {
     allStockMinAmount: {required: false, defaultValue: '', mlHeader: 'minAmountInAllStock'},
     minAmountInStock: {required: false, defaultValue: '', mlHeader: 'minAmountInStock'}
 };
-const test = () => {
+const test = (sheetName) => {
     const excelTestFields = {
         result: {
             required: false,
@@ -148,9 +148,14 @@ const test = () => {
 
     };
     // ['sf-full.xlsx', 'sf-missingHeaders.xlsx']
-    let filePath = path.normalize(path.join(__dirname, '..', 'sf-full.xlsx'))
+    let filePath = path.normalize(path.join(__dirname, '..', sheetName))
     console.log('reading file - : ' + filePath)
     recordsFromExcel(null, null, null, filePath, sheetNames, excelSFFields, null, null, null)
 }
 
-test()
+test('sf-full.xlsx')  // ნორმალურ ვარიანტი
+//test('test.xlsx') // ჰედერები ერთხაზეა განთავსებული მაგრამ რამოდენიმეგან
+//test('test1.xlsx') // ცარიელი შიტი
+//test('test2.xlsx') // არსებობს ინფორმაცია მაგრამ არცერთი ჰედერი არაა
+//test('test3.xlsx') // რამოდენიმე რექურედ ჰედერი აკლია
+//test('test4.xlsx') // ყველა ჰედერია მაგრამ გაბნეულია
