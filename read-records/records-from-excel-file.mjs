@@ -125,12 +125,12 @@ const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
     let columnsMlHeadersObjectsByLanguage = {};
 
     uniqLanguages.forEach(language => {
-        columnsMlHeadersObjectsByLanguage[language] = columnsMlHeadersObjects.map(columnMlHeadersObjects, index) => {
+        columnsMlHeadersObjectsByLanguage[language] = columnsMlHeadersObjects.map((columnMlHeadersObjects, index) => {
             return columnMlHeadersObjects.map(columnMlHeadersObject => columnMlHeadersObject[language])
-                .join(allLanguageColumnsHeaders[index]);
-        }
+            .concat(allLanguageColumnsHeaders[index])
+        })
     });
-   
+
     // ვიღებ ექსელის რეკორდებს
     const excelRecords = xlsx.utils.sheet_to_json(sheet, {
         raw: false,
