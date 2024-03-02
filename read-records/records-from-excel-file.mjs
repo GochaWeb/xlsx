@@ -85,55 +85,51 @@ const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
         return;
     }
 
-    // მიღებული columnsMlHeaders-იდან ენების მიხედვით იქმნება Headers-ები
-    let columnsMlHeadersByLanguage = {};
     // მიღებული columnsMlHeaders-იდან მიიღება columnsMlHeadersObjects ml ობიექტების მასივი
     let columnsMlHeadersObjects = [];
     // allLanguageColumnsHeaders - ის დასახელებები რომლებიც არ მოიძებნა ენებში
     let allLanguageColumnsHeaders = [];
 
     if (columnsMlHeaders.some(columnMlHeaders => {
-
-        let columnMlHeadersObjects = [];
         if (!columnMlHeaders.length) {
             console.log('ერთ -ერთი mlHeader - ცარიელია');
             return true;
         }
-        arrify(columnMlHeaders).map(header => {
-            // აქ ვამოწმებთ თუ header სტრიქონია, მაშინ ვიღებთ შესაბამის gssLanguage.mlStrings - დან შესაბამის ობიექტს
-            // ხოლო header სტრიქონი თუ არაა მაშინ ობიექტია და ვიღებს ამ ობიექტს
-            let mlHeaderObject = is.string(header) ? gssLanguage.mlStrings[header] : header;
-            if (mlHeaderObject) {
-                columnsMlHeadersObjects.push(mlHeaderObject)
-                columnMlHeadersObjects.push(mlHeaderObject)
+
+        const
+            columnMlHeadersObjects = [],
+            allLanguageColumnHeaders = [];
+
+        arrify(columnMlHeaders).map(columnMlHeader => {
+            // აქ ვამოწმებთ თუ columnMlHeader სტრიქონია, მაშინ ვიღებთ შესაბამის gssLanguage.mlStrings - დან შესაბამის ობიექტს
+            // ხოლო columnMlHeader სტრიქონი თუ არაა მაშინ ობიექტია და ვიღებს ამ ობიექტს
+            const columnMlHeaderObject = is.string(columnMlHeader) ? gssLanguage.mlStrings[columnMlHeader] : columnMlHeader;
+
+            if (columnMlHeaderObject) {
+                columnMlHeadersObjects.push(columnMlHeaderObject);
             } else {
-                columnMlHeadersObjects.push(header)
+                allLanguageColumnHeaders.push(columnMlHeader);
             }
         });
 
-        allLanguageColumnsHeaders.push(columnMlHeadersObjects);
+        columnsMlHeadersObjects.push(columnMlHeadersObjects);
+        allLanguageColumnsHeaders.push(allLanguageColumnHeaders);
     })) {
         // todo: დაბრუნება არაა საჭირო ფუნქციიდან?
         return;
     }
     // columnsMlHeadersObjects- ობიექტებიდან ვიღე კეიებს და ვაბრუნებ მასივის მასივად. ვიღებ უნიკალურს
-    const uniqLanguages = _.intersection(...columnsMlHeadersObjects.map(columnMlHeadersObjects => Object.keys(columnMlHeadersObjects)));
+    const uniqLanguages = _.intersection(..._.flattenDeep(columnsMlHeadersObjects).map(columnMlHeadersObject => Object.keys(columnMlHeadersObject)));
 
-    // სტრინგის ჰედერებს გარდავქმნი ობიექტად uniqLanguages - ის მიხედვით, ხოლო ობიექტებიდან ვიღებ ელემენტებს uniqLanguages - ის მიხედვით და ვაბრუნებ ობიექტს
-    // const obj = { a: { b: 1 }, c: 2 }; const picked = _.pick(obj, 'a.b');  Output: { a: { b: 1 } } აბრუნებს ობიექტს
-    // პიკს შეგიძლია გადასცე სტრინგი, სტრინგების მასივი, და ასევე თითოეულია პარამეტრებათ
+    // მიღებული columnsMlHeaders-იდან ენების მიხედვით იქმნება Headers-ები
+    let columnsMlHeadersObjectsByLanguage = {};
+
     uniqLanguages.forEach(language => {
-        columnsMlHeadersByLanguage[language] = allLanguageColumnsHeaders.map(allLanguageColumnHeaders => {
-            return allLanguageColumnHeaders.map(header => {
-                if (is.string(header)) {
-                    return header; 
-                }  
-                return header[language]
-            });
-        });
+        columnsMlHeadersObjectsByLanguage[language] = columnsMlHeadersObjects.map(columnMlHeadersObjects, index) => {
+            return columnMlHeadersObjects.map(columnMlHeadersObject => columnMlHeadersObject[language])
+                .join(allLanguageColumnsHeaders[index]);
+        }
     });
-   
-
    
     // ვიღებ ექსელის რეკორდებს
     const excelRecords = xlsx.utils.sheet_to_json(sheet, {
@@ -147,20 +143,19 @@ const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
     if (excelRecords.some((rawValues, rawIndex) => {
         const foundHeaders = [];
         if (uniqLanguages.some(language => {
-            let copycolumnsMlHeadersByLanguage = columnsMlHeadersByLanguage[language].slice();
+            let copyColumnsMlHeadersByLanguage = columnsMlHeadersObjectsByLanguage[language].slice();
             return rawValues.some(value => {
-                copycolumnsMlHeadersByLanguage.some((columnMlHeadersByLanguage, columnMlHeadersByLanguageIndex) => {
+                copyColumnsMlHeadersByLanguage.some((columnMlHeadersByLanguage, index) => {
                     if (columnMlHeadersByLanguage.includes(value)) {
                         foundHeaders.push(value);
 
-                        copycolumnsMlHeadersByLanguage.splice(columnMlHeadersByLanguageIndex, 1);
+                        copyColumnsMlHeadersByLanguage.splice(index, 1);
 
                         return true;
                     }
                 });
 
-                if (!copycolumnsMlHeadersByLanguage.length) {
-
+                if (!copyColumnsMlHeadersByLanguage.length) {
                     return true;
                 }
             });
@@ -169,7 +164,7 @@ const getHeaderRawIndex = (sheet, columnsMlHeaders) => {
             return true;
         }
     })) {
-        console.log(result)
+console.log(result)
         return result;
     }
 
