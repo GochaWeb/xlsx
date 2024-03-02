@@ -877,6 +877,11 @@ class GSS_Language {
                     en: 'Importing has started\ninformation will be sent to the email address - {0} - later',
                     ru: 'Началось импортирование\nна - информация будет отправлена на адрес электронной почты - {0} позже'
                 },
+                excelSheetHasNoData: {
+                    ka: '{0} ჩანართი - არ შეიავს ჩანაწერებს',
+                    en: '',
+                    ru: ''
+                },
                 excelCanNotFindSheet: {
                     ka: 'Excel ფაილში არ მოიძებნა შემდეგი დასახელებების არც ერთი ჩანართი\n{0}',
                     en: 'No sheets with the following names were found in the Excel file\n{0}',
