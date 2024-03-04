@@ -38,10 +38,11 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
      * Retrieves all headers for a given record description.
      *
      * @param {object} recordDescriptionByFields - The description of the record, with fields as keys and property descriptions as values.
+     * @param {string} language - The language code for the desired language of the headers. Optional, default is null.
      *
      * @returns {object} - An object containing the record headers as keys and their corresponding field keys as values.
      */
-    const getRecordAllHeaders = recordDescriptionByFields => {
+    const getRecordAllHeaders = (recordDescriptionByFields, language) => {
         let recordHeaders = {};
         Object.keys(recordDescriptionByFields).forEach(key => {
             arrify(recordDescriptionByFields[key].mlHeader).forEach(header => {
@@ -74,7 +75,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
      *
      * @returns {undefined|{ foundHeaders: Array<string>, rawIndex: number }} - The found headers and the raw index.
      */
-    const getHeaderRawIndex = (sheetInfo, columnsMlHeaders) => {
+    const getHeaderRawInfo = (sheetInfo, columnsMlHeaders) => {
         const sheet = sheetInfo.sheet;
 
         if (!sheet['!ref']) {
@@ -82,10 +83,14 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
             return;
         }
 
+        // recordsStartRawIndex = sheet['!ref']....
+        // todo: ექსლის ჩანაწერების პირველი სტრიქონის ინდექსი
+        const recordsStartRawIndex = 0;
+
         if (!columnsMlHeaders.length) {
             return {
                 foundHeaders: [],
-                rawIndex: 0
+                rawIndex: recordsStartRawIndex
             };
         }
 
@@ -133,7 +138,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
             raw: false,
             blankrows: true,
             header: 1,
-            range: 0
+            range: sheet['!ref']
         });
 
         let result;
@@ -157,7 +162,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
                     }
                 });
             })) {
-                result = {foundHeaders, rawIndex: rawIndex};
+                result = {foundHeaders, rawIndex: recordsStartRawIndex + rawIndex};
                 return true;
             }
         })) {
@@ -191,26 +196,26 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
     const sheet = sheets[0].sheet;
 
     //ამ შემთხვევაში ვეძახი უბრალოდ ეს კოდი ამოვარდება აქედან რადგან გადმოეცემა
-    const headerRawIndex =
-        getHeaderRawIndex(sheets[0],
+    const headerRawInfo =
+        getHeaderRawInfo(sheets[0],
             Object.keys(recordDescriptionByFields).filter(key => recordDescriptionByFields[key].required === true)
                 .map(key => recordDescriptionByFields[key].mlHeader));
 
-    if (!headerRawIndex) {
+    if (!headerRawInfo) {
         return;
     }
-
 
     let records = [],
         requiredHeaders = [],
         nonAccessibleRecords = [];
     let recordAllLHeaders = getRecordAllHeaders(recordDescriptionByFields);
-    const excelHeaders = xlsx.utils.sheet_to_json(sheet, {raw: false, header: 1, range: headerRawIndex.rawIndex})[0];
+    const excelHeaders = xlsx.utils.sheet_to_json(sheet, {raw: false, header: 1, range: headerRawInfo.rawIndex})[0];
     const excelRecords = xlsx.utils.sheet_to_json(sheet, {
         raw : true,
         blankrows : false,
         defval: '',
-        range: headerRawIndex.rawIndex
+        // todo: + 1 არ უნდა
+        range: headerRawInfo.rawIndex
     });
 
     // excelHeaderByFieldKey ობიექტში ვაყალიბებთ ჩანაწერის ფილდის დასახელებას თუ რომელი არსებული სვეტის დასახელება შეესაბამება
