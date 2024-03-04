@@ -83,10 +83,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
             return;
         }
 
-        // recordsStartRawIndex = sheet['!ref']....
-        // todo: ექსლის ჩანაწერების პირველი სტრიქონის ინდექსი
-        const recordsStartRawIndex = 0;
-
+        const recordsStartRawIndex = xlsx.utils.decode_cell(sheet['!ref'].split(':')[0]).r;
         if (!columnsMlHeaders.length) {
             return {
                 foundHeaders: [],
@@ -209,12 +206,17 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
         requiredHeaders = [],
         nonAccessibleRecords = [];
     let recordAllLHeaders = getRecordAllHeaders(recordDescriptionByFields);
-    const excelHeaders = xlsx.utils.sheet_to_json(sheet, {raw: false, header: 1, range: headerRawInfo.rawIndex})[0];
+
+    const excelHeaders = xlsx.utils.sheet_to_json(sheet, {
+        raw: false,
+        blankrows: false,
+        header: 1,
+        range: headerRawInfo.rawIndex
+    });
     const excelRecords = xlsx.utils.sheet_to_json(sheet, {
-        raw : true,
-        blankrows : false,
+        raw: true,
+        blankrows: false,
         defval: '',
-        // todo: + 1 არ უნდა
         range: headerRawInfo.rawIndex
     });
 
@@ -222,7 +224,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
     let excelHeaderByFieldKey = {};
     Object.keys(recordAllLHeaders).forEach(recordLHeader => {
         const excelHeader = _.find(excelHeaders, excelHeader => {
-            return excelHeader && (excelHeader.toLowerCase().indexOf(recordLHeader.toLowerCase()) === 0)
+            return excelHeader && (excelHeader || ''.toLowerCase().indexOf(recordLHeader.toLowerCase()) === 0)
         });
         if (excelHeader) {
             excelHeaderByFieldKey[recordAllLHeaders[recordLHeader]] = excelHeader;
