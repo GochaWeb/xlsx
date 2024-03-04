@@ -38,11 +38,10 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
      * Retrieves all headers for a given record description.
      *
      * @param {object} recordDescriptionByFields - The description of the record, with fields as keys and property descriptions as values.
-     * @param {string} language - The language code for the desired language of the headers. Optional, default is null.
      *
      * @returns {object} - An object containing the record headers as keys and their corresponding field keys as values.
      */
-    const getRecordAllHeaders = (recordDescriptionByFields, language) => {
+    const getRecordAllHeaders = recordDescriptionByFields => {
         let recordHeaders = {};
         Object.keys(recordDescriptionByFields).forEach(key => {
             arrify(recordDescriptionByFields[key].mlHeader).forEach(header => {
@@ -86,7 +85,6 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
         if (!columnsMlHeaders.length) {
             return {
                 foundHeaders: [],
-                // todo: ექსლის ჩანაწერების პირველი სტრიქონის ინდექსი
                 rawIndex: 0
             };
         }
@@ -127,7 +125,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
             columnsMlHeadersObjectsByLanguage[language] = columnsMlHeadersObjects.map((columnMlHeadersObjects, index) => {
                 return columnMlHeadersObjects.map(columnMlHeadersObject => columnMlHeadersObject[language])
                     .concat(allLanguageColumnsHeaders[index])
-            })
+            });
         });
 
         // ვიღებ ექსელის რეკორდებს
@@ -135,7 +133,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
             raw: false,
             blankrows: true,
             header: 1,
-            range: sheet['!ref']
+            range: 0
         });
 
         let result;
@@ -159,8 +157,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
                     }
                 });
             })) {
-                // todo: rawIndex + უნდა დაემატოს ექსლის ჩანაწერების პირველი სტრიქონის ინდექსი
-                result = {foundHeaders, rawIndex};
+                result = {foundHeaders, rawIndex: rawIndex};
                 return true;
             }
         })) {
@@ -172,7 +169,6 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
 
     language = language || 'en';
     const excelWorkbook = xlsx.readFile(excelPath);
-
     // sheetNames - გადმოცემული შიტის დასახელებებიდან მხოლოდ ერთი დასახელების შიტი უნდა მოიძებნოს
     let sheets = [];
     sheetNames.forEach(sheetName => {
@@ -200,28 +196,22 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
             Object.keys(recordDescriptionByFields).filter(key => recordDescriptionByFields[key].required === true)
                 .map(key => recordDescriptionByFields[key].mlHeader));
 
-    const rangeForExcelHeaders = 'A' + headerRawIndex + ':' + 'ZZ' + headerRawIndex;
-    const rangeForExcelRecords = 'A' + headerRawIndex + ':' + sheet["!ref"].split(':')[1];
+    if (!headerRawIndex) {
+        return;
+    }
+
 
     let records = [],
         requiredHeaders = [],
         nonAccessibleRecords = [];
     let recordAllLHeaders = getRecordAllHeaders(recordDescriptionByFields);
-    const excelHeaders = xlsx.utils.sheet_to_json(sheet, {raw: false, header: 1, range: rangeForExcelHeaders})[0];
-    // console.log('recordsFromExcel -  ის ფუნქციაში მივიღე ექსელის ყველა ჰედერეი რეინჯიდან : ' + rangeForExcelHeaders)
-    // console.log(excelHeaders)
+    const excelHeaders = xlsx.utils.sheet_to_json(sheet, {raw: false, header: 1, range: headerRawIndex.rawIndex})[0];
     const excelRecords = xlsx.utils.sheet_to_json(sheet, {
-        raw: true,
-        blankrows: true,
-        range: xlsx.utils.decode_range(rangeForExcelRecords)
+        raw : true,
+        blankrows : false,
+        defval: '',
+        range: headerRawIndex.rawIndex
     });
-    // console.log('recordsFromExcel -  ის ფუნქციაში მივიღე ექსელის ყველა ჩანაწერი რეინჯიდან : ' + rangeForExcelRecords)
-    // console.log(excelRecords)
-    // თუ ცარიელი ექსელია ვბრუნდები
-    if (excelRecords.length === 0) {
-        console.log('შიტი ცარიელია')
-        return;
-    }
 
     // excelHeaderByFieldKey ობიექტში ვაყალიბებთ ჩანაწერის ფილდის დასახელებას თუ რომელი არსებული სვეტის დასახელება შეესაბამება
     let excelHeaderByFieldKey = {};
