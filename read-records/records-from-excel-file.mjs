@@ -133,7 +133,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
         // ვიღებ ექსელის რეკორდებს
         const excelRecords = xlsx.utils.sheet_to_json(sheet, {
             raw: false,
-            blankrows: true,
+            blankrows: false,
             header: 1,
             range: sheet['!ref']
         });
