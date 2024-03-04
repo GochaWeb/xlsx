@@ -877,11 +877,6 @@ class GSS_Language {
                     en: 'Importing has started\ninformation will be sent to the email address - {0} - later',
                     ru: 'Началось импортирование\nна - информация будет отправлена на адрес электронной почты - {0} позже'
                 },
-                excelSheetHasNoData: {
-                    ka: '{0} ჩანართი - არ შეიავს ჩანაწერებს',
-                    en: '',
-                    ru: ''
-                },
                 excelCanNotFindSheet: {
                     ka: 'Excel ფაილში არ მოიძებნა შემდეგი დასახელებების არც ერთი ჩანართი\n{0}',
                     en: 'No sheets with the following names were found in the Excel file\n{0}',
@@ -893,9 +888,19 @@ class GSS_Language {
                     ru: 'Файл Excel должен содержать только один лист с названием:\n{0}'
                 },
                 inSheetRecordsNotFound: {
-                    ka: '{0}\nდასახელების მქონე არც ერთ ჩანართში მითითებული არ არის ჩანაწერები',
-                    en: 'No records are found in any of the sheets named\n{0}',
-                    ru: 'Никаких записей не указано ни в одном листе с названиями\n{0}'
+                    ka: '{0}\nდასახელების მქონე ჩანართში მითითებული არ არის ჩანაწერები',
+                    en: 'No records are found in sheet named\n{0}',
+                    ru: 'На листе с именем\n{0}\nне найдено записей'
+                },
+                // importExcelRequiredHeaders: {
+                //     ka: 'არ მოიძებნა სვეტ(ებ)ი დასახელებით',
+                //     en: 'No column(s) found with the name',
+                //     ru: 'Не найдена(ы) колонна с именем'
+                // },
+                excelSheetHasNoData: {
+                    ka: '{0}\nდასახელების მქონე ჩანართში არსებული ჩანაწერებისთვის ერთ-ერთ ენაზე ყველა სვეტ(ებ)ი დასახელებით\n{1}\nმითითებული არ არის',
+                    en: '',
+                    ru: ''
                 },
                 rsgeUser: {
                     ka: 'rs.ge მომხმარებელი',
@@ -2596,11 +2601,6 @@ class GSS_Language {
                     ka: 'ანგარიშ-ფაქტურა გაიგზავნისას მოხდა შეცდომა.\nგთხოვთ შეამოწმოთ rs.ge პორტალის გამართულობა',
                     en: 'An error occurred while sending the invoice.\nPlease check if the rs.ge portal works without delay',
                     ru: 'Произошла ошибка при отправке счета-фактуры.\nПожалуйста проверьте, что портал rs.ge работает без задержек',
-                },
-                importExcelRequiredHeaders: {
-                    ka: 'არ მოიძებნა სვეტ(ებ)ი დასახელებით',
-                    en: 'No column(s) found with the name',
-                    ru: 'Не найдена(ы) колонна с именем'
                 },
                 importGoodsExcelNonAccessibleRecords: {
                     ka: 'ექსელის ფაილში საქონელს არ აქვთ მითითებული',

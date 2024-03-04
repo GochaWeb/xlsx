@@ -42,18 +42,19 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
      *
      * @returns {object} - An object containing the record headers as keys and their corresponding field keys as values.
      */
-    const getRecordAllHeaders = (recordDescriptionByFields, language) => {
+    // todo: ენების მიხედვით მიხედვით უნდა დააბრუნოს {ka: [ყველა სათაური], }
+    const getRecordFieldsByLHeaders = (recordDescriptionByFields, language) => {
         let recordHeaders = {};
         Object.keys(recordDescriptionByFields).forEach(key => {
             arrify(recordDescriptionByFields[key].mlHeader).forEach(header => {
                 // აქ ვამოწმებთ თუ header სტრიქონია, მაშინ ვიღებთ შესაბამის gssLanguage.mlStrings - დან შესაბამის ობიექტს
                 // ხოლო header სტრიქონი თუ არაა მაშინ ობიექტია და ვიღებს ამ ობიექტს
-
                 let mlHeader = is.string(header) ? gssLanguage.mlStrings[header] : header;
                 if (!mlHeader) {
                     recordHeaders[header] = key
                     return;
                 }
+
                 if (language) {
                     recordHeaders[mlHeader[language].toLowerCase()] = key;
                 } else {
@@ -73,20 +74,23 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
      * @param {{name: string, sheet: Object}} sheetInfo -  The sheet information object.
      * @param {Array<Array|string>} columnsMlHeaders - The ml headers to match against the sheet headers.
      *
-     * @returns {undefined|{ foundHeaders: Array<string>, rawIndex: number }} - The found headers and the raw index.
+     * @returns {undefined|{ lHeaders: Array<string>, rawIndex: number, language: undefined|string }} - The found headers by one language and the raw index.
      */
-    const getHeaderRawInfo = (sheetInfo, columnsMlHeaders) => {
-        const sheet = sheetInfo.sheet;
+    const getLHeaderRawInfo = (sheetInfo, columnsMlHeaders) => {
+        const
+            sheet = sheetInfo.sheet,
+            sheet_ref = sheet['!ref'];
 
-        if (!sheet['!ref']) {
-            sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelSheetHasNoData, {language: language}), [sheetInfo.name]));
+        if (!sheet_ref) {
+            sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.inSheetRecordsNotFound, {language: language}), [sheetInfo.name]));
             return;
         }
 
-        const recordsStartRawIndex = xlsx.utils.decode_cell(sheet['!ref'].split(':')[0]).r;
+        const recordsStartRawIndex = xlsx.utils.decode_range(sheet_ref).s.r;
         if (!columnsMlHeaders.length) {
             return {
-                foundHeaders: [],
+                lHeaders: [],
+                language: undefined,
                 rawIndex: recordsStartRawIndex
             };
         }
@@ -135,18 +139,18 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
             raw: false,
             blankrows: false,
             header: 1,
-            range: sheet['!ref']
+            defval: '',
+            range: sheet_ref
         });
 
-        let result;
+        const getLHeaderRawInfo = {lHeaders: [], rawIndex: recordsStartRawIndex, language: undefined};
         if (excelRecords.some((rawValues, rawIndex) => {
-            const foundHeaders = [];
             if (uniqLanguages.some(language => {
                 let copyColumnsMlHeadersByLanguage = columnsMlHeadersObjectsByLanguage[language].slice();
                 return rawValues.some(value => {
                     copyColumnsMlHeadersByLanguage.some((columnMlHeadersByLanguage, index) => {
                         if (columnMlHeadersByLanguage.includes(value)) {
-                            foundHeaders.push(value);
+                            getLHeaderRawInfo.lHeaders.push(value);
 
                             copyColumnsMlHeadersByLanguage.splice(index, 1);
 
@@ -155,18 +159,23 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
                     });
 
                     if (!copyColumnsMlHeadersByLanguage.length) {
+                        getLHeaderRawInfo.language = language;
                         return true;
                     }
                 });
             })) {
-                result = {foundHeaders, rawIndex: recordsStartRawIndex + rawIndex};
+                getLHeaderRawInfo.rawIndex = recordsStartRawIndex + rawIndex;
+
                 return true;
             }
         })) {
-            return result;
+            return getLHeaderRawInfo;
         }
 
-        return undefined;
+        const columnsNamesByLanguages = uniqLanguages.map(language =>
+                `${language}:  ${columnsMlHeadersObjectsByLanguage[language].map(columnMlHeadersByLanguage => `[${columnMlHeadersByLanguage.join(',')}]`).join(' ')}`
+            ).join('\n');
+        sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelSheetHasNoData, {language: language}), [sheetInfo.name, columnsNamesByLanguages]));
     }
 
     language = language || 'en';
@@ -194,40 +203,47 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
 
     //ამ შემთხვევაში ვეძახი უბრალოდ ეს კოდი ამოვარდება აქედან რადგან გადმოეცემა
     const headerRawInfo =
-        getHeaderRawInfo(sheets[0],
+        getLHeaderRawInfo(sheets[0],
             Object.keys(recordDescriptionByFields).filter(key => recordDescriptionByFields[key].required === true)
                 .map(key => recordDescriptionByFields[key].mlHeader));
 
     if (!headerRawInfo) {
+        // შეცდომის მეილი უკვე გაგზავნილი იქნება
         return;
     }
 
     let records = [],
+        // todo: requiredHeaders - ზე შემოწმება მოსაძრობია
         requiredHeaders = [],
         nonAccessibleRecords = [];
-    let recordAllLHeaders = getRecordAllHeaders(recordDescriptionByFields);
+    let recordFieldsByLHeaders = getRecordFieldsByLHeaders(recordDescriptionByFields);
 
     const excelHeaders = xlsx.utils.sheet_to_json(sheet, {
         raw: false,
-        blankrows: false,
         header: 1,
-        range: headerRawInfo.rawIndex
-    });
+        defval: '',
+        range: `A${headerRawInfo.rawIndex + 1}:ZZ${headerRawInfo.rawIndex + 1}`
+    })[0];
     const excelRecords = xlsx.utils.sheet_to_json(sheet, {
-        raw: true,
-        blankrows: false,
+        raw: false,
+        blankrows: '**',
         defval: '',
         range: headerRawInfo.rawIndex
     });
 
     // excelHeaderByFieldKey ობიექტში ვაყალიბებთ ჩანაწერის ფილდის დასახელებას თუ რომელი არსებული სვეტის დასახელება შეესაბამება
     let excelHeaderByFieldKey = {};
-    Object.keys(recordAllLHeaders).forEach(recordLHeader => {
+    Object.keys(recordFieldsByLHeaders).forEach(recordLHeader => {
+        // todo: excelHeaderByFieldKey მისაღებად პრიორიტეტული უნდა იყოს getLHeaderRawInfo-ით დაბრუნებული
+        //  და არა აუცილებელი ფილდებისთვის პირველივე შემხვედრი მარცხნიდან (getLHeaderRawInfo-ით დაბრუნებულ ენაზე
+        //  ან ყველა ენაზე თუ required ფილდები თუ არ აქვს) და არა ბოლო როგორც ეხლაა
+
         const excelHeader = _.find(excelHeaders, excelHeader => {
-            return excelHeader && (excelHeader || ''.toLowerCase().indexOf(recordLHeader.toLowerCase()) === 0)
+            return excelHeader && (excelHeader.toLowerCase().indexOf(recordLHeader.toLowerCase()) === 0);
         });
+
         if (excelHeader) {
-            excelHeaderByFieldKey[recordAllLHeaders[recordLHeader]] = excelHeader;
+            excelHeaderByFieldKey[recordFieldsByLHeaders[recordLHeader]] = excelHeader;
         }
     });
 
@@ -244,12 +260,11 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
 
     // აუცილებელის სვეტის არქონის შემთხვევაში მისი ყველა ენის დასახელებებს ვაგზავნით შეცდომის სახით
     if (requiredHeaders.length > 0) {
-        console.log(requiredHeaders.map(requiredHeader => console.log('აუცილებელის სვეტები არ მოძებნა' + " " + requiredHeader)));
-        // sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, gssLanguage.lString(gssLanguage.mlStrings['importExcelRequiredHeaders'], {language: language})
-        //     + '\n'
-        //     + String.format('<div style="margin: 0; border-bottom: 1px solid #d0d0d0; padding: 3px;">{0}</div>', [
-        //         requiredHeaders.map(requiredHeader => requiredHeader.join(` ${gssLanguage.lString(gssLanguage.mlStrings['or'], {language: language})} `)).join(' - ')
-        //     ]));
+        sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, gssLanguage.lString(gssLanguage.mlStrings['importExcelRequiredHeaders'], {language: language})
+            + '\n'
+            + String.format('<div style="margin: 0; border-bottom: 1px solid #d0d0d0; padding: 3px;">{0}</div>', [
+                requiredHeaders.map(requiredHeader => requiredHeader.join(` ${gssLanguage.lString(gssLanguage.mlStrings['or'], {language: language})} `)).join(' - ')
+            ]));
         return;
     }
     let line = 1;
@@ -264,7 +279,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
         // ექსელის ანაწერიდან ვქმნით ჩანაწერს - record
 
         Object.keys(excelRecord).forEach((key) => {
-            const fieldKey = recordAllLHeaders[key];
+            const fieldKey = recordFieldsByLHeaders[key];
             if (fieldKey) {
                 record[fieldKey] = excelRecord[key];
             }
@@ -333,3 +348,5 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
 
     return records;
 };
+
+// todo: ალგორითმი ლაპარაკად დამიწერე
