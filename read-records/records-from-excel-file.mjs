@@ -42,31 +42,31 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
      *
      * @returns {object} - An object containing the record headers as keys and their corresponding field keys as values.
      */
-    // todo: ენების მიხედვით მიხედვით უნდა დააბრუნოს {ka: [ყველა სათაური], }
+        // todo: ენების მიხედვით მიხედვით უნდა დააბრუნოს {ka: [ყველა სათაური], }
     const getRecordFieldsByLHeaders = (recordDescriptionByFields, language) => {
-        let recordHeaders = {};
-        Object.keys(recordDescriptionByFields).forEach(key => {
-            arrify(recordDescriptionByFields[key].mlHeader).forEach(header => {
-                // აქ ვამოწმებთ თუ header სტრიქონია, მაშინ ვიღებთ შესაბამის gssLanguage.mlStrings - დან შესაბამის ობიექტს
-                // ხოლო header სტრიქონი თუ არაა მაშინ ობიექტია და ვიღებს ამ ობიექტს
-                let mlHeader = is.string(header) ? gssLanguage.mlStrings[header] : header;
-                if (!mlHeader) {
-                    recordHeaders[header] = key
-                    return;
-                }
+            let recordHeaders = {};
+            Object.keys(recordDescriptionByFields).forEach(key => {
+                arrify(recordDescriptionByFields[key].mlHeader).forEach(header => {
+                    // აქ ვამოწმებთ თუ header სტრიქონია, მაშინ ვიღებთ შესაბამის gssLanguage.mlStrings - დან შესაბამის ობიექტს
+                    // ხოლო header სტრიქონი თუ არაა მაშინ ობიექტია და ვიღებს ამ ობიექტს
+                    let mlHeader = is.string(header) ? gssLanguage.mlStrings[header] : header;
+                    if (!mlHeader) {
+                        recordHeaders[header] = key
+                        return;
+                    }
 
-                if (language) {
-                    recordHeaders[mlHeader[language].toLowerCase()] = key;
-                } else {
-                    Object.keys(mlHeader).forEach(mlKey => {
-                        recordHeaders[mlHeader[mlKey.toLowerCase()]] = key;
-                    });
-                }
+                    if (language) {
+                        recordHeaders[mlHeader[language].toLowerCase()] = key;
+                    } else {
+                        Object.keys(mlHeader).forEach(mlKey => {
+                            recordHeaders[mlHeader[mlKey.toLowerCase()]] = key;
+                        });
+                    }
+                });
             });
-        });
 
-        return recordHeaders;
-    };
+            return recordHeaders;
+        };
 
     /**
      * Returns the raw index of the header in the given sheet that matches the provided ml headers.
@@ -91,7 +91,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
             return {
                 lHeaders: [],
                 language: undefined,
-                rawIndex: recordsStartRawIndex
+                rawIndex: recordsStartRawIndex + 1
             };
         }
 
@@ -164,7 +164,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
                     }
                 });
             })) {
-                getLHeaderRawInfo.rawIndex = recordsStartRawIndex + rawIndex +1;
+                getLHeaderRawInfo.rawIndex = recordsStartRawIndex + rawIndex + 1;
 
                 return true;
             }
@@ -173,8 +173,8 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
         }
 
         const columnsNamesByLanguages = uniqLanguages.map(language =>
-                `${language}:  ${columnsMlHeadersObjectsByLanguage[language].map(columnMlHeadersByLanguage => `[${columnMlHeadersByLanguage.join(',')}]`).join(' ')}`
-            ).join('\n');
+            `${language}:  ${columnsMlHeadersObjectsByLanguage[language].map(columnMlHeadersByLanguage => `[${columnMlHeadersByLanguage.join(',')}]`).join(' ')}`
+        ).join('\n');
         sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, String.format(gssLanguage.lString(gssLanguage.mlStrings.excelSheetHasNoData, {language: language}), [sheetInfo.name, columnsNamesByLanguages]));
     }
 
@@ -200,7 +200,6 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
     }
 
     const sheet = sheets[0].sheet;
-     console.log(xlsx.utils.encode_row(5))
     //ამ შემთხვევაში ვეძახი უბრალოდ ეს კოდი ამოვარდება აქედან რადგან გადმოეცემა
     const headerRawInfo =
         getLHeaderRawInfo(sheets[0],
@@ -233,7 +232,6 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
 
     // excelHeaderByFieldKey ობიექტში ვაყალიბებთ ჩანაწერის ფილდის დასახელებას თუ რომელი არსებული სვეტის დასახელება შეესაბამება
     let excelHeaderByFieldKey = {};
-   console.log(recordFieldsByLHeaders)
     Object.keys(recordFieldsByLHeaders).forEach(recordLHeader => {
         // todo: excelHeaderByFieldKey მისაღებად პრიორიტეტული უნდა იყოს getLHeaderRawInfo-ით დაბრუნებული
         //  და არა აუცილებელი ფილდებისთვის პირველივე შემხვედრი მარცხნიდან (getLHeaderRawInfo-ით დაბრუნებულ ენაზე
@@ -247,7 +245,6 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
             excelHeaderByFieldKey[recordFieldsByLHeaders[recordLHeader]] = excelHeader;
         }
     });
-console.log(excelHeaderByFieldKey)
     // ვამოწმებთ ჩანაწერის რომელი აუცილებელი ფილდისთვის ექსელში არ გვაქვს შესაბამისსი სვეტის დასახელება
     Object.keys(recordDescriptionByFields).forEach(key => {
         const fieldOption = recordDescriptionByFields[key];
@@ -351,40 +348,119 @@ console.log(excelHeaderByFieldKey)
 };
 
 // todo: ალგორითმი ლაპარაკად დამიწერე
-
-// todo: ალგორითმი ლაპარაკად დამიწერე
-// getLHeaderRawInfo - დან მიღებულ შედეგში პირველრიგში უნდა შევამოწმო ენა თუ ენა
-// მაქვს ესეიგ იჩანაწერებიც მაქვს კონკრეტულ ენაზე,
-
-
-//headerRawInfo => getLHeaderRawInfo.language - getLHeaderRawInfo.lHeaders
-// recordFieldsByLHeaders[getLHeaderRawInfo.language]
-// მაქვს :
-// recordFieldsByLHeaders[getLHeaderRawInfo.language] - ში უნდა ვირბინო foreach- ით რადგან ყველა ჩანაწერი მჭირდება
-// excelHeaders - ში უნდა ვიებინო some - ით დავაბრუნო პირველივე შემხვედრი
-// ამის მერე მჭირდება კოდის ეს ნაწილი
-// if (excelHeader) {
-//     excelHeaderByFieldKey[recordFieldsByLHeaders[recordLHeader]] = excelHeader;
+//
+// getRecordFieldsByLHeaders-ფუნქციით უნდა მივიღოთ ობიექტი სადაც ენების მიხევით
+// ჩანაწერის LHeaders-ებს შეესაბამება შესაბამისი field-ების
+// მაგალითად:
+// - გვაქვს ჩანაწერის ფილდები: {*name, *money, debit, credit} (* აღნიშნავს Required-ს)
+// - გადმოცემული mlHeader-ები ენების შესაბამისად გარდაიქმნა
+//        ka: [[სახელი, დასახელება], [თანხა], [დებეტი, დებეტური ანგარიში], []]
+//        ru: [[Название, Имя], [Деньги], [Дебет], [Кредит]]
+//        en: [[name], [money, amount], [debit], [credit]]
+// - getRecordFieldsByLHeaders - უნდა დააბრუნოს
+// {
+//  ka: {
+//          სახელი: name
+//          დასახელება: name
+//          თანხა: money
+//          დებეტი: debit
+//          'დებეტური ანგარიში': debit
+//      }
+//  ru: {
+//          Название: name
+//          Имя: name
+//          Деньги: money
+//          Дебет: debit
+//          Кредит: credit
+//      }
+//  en: {
+//          name: name
+//          money: money
+//          amount: money
+//          debit: debit
+//          credit: credit
+//      }
 // }
-//  excelHeaderByFieldKey - ში ვაყალიბებ ესეთ ობიექტს -
-//  excelHeaderByFieldKey {
-//     Date : 'თარიღი'
-//  }
-//მაგ :
-// recordFieldsByLHeaders[getLHeaderRawInfo.language][0].forEach(obj => {
-//     excelHeader.some(lheader => {
-//         if (obj.key.toLowerCase() === lheader.toLowerCase()) {
-//             excelHeaderByFieldKey[obj.value] = lheader;
-//             return true;
-//         }
-//     });
-// });
-
-
-// არ მაქვს :
-// getRecordFieldsByLHeaders -დან უნდა ავიღო ის მასივი რომელშიც მეტი ჰედერი მექნება ან თუ ერთმანეთის ტოლია პირველივე.
-// დადგენილ მასივში იგივე პრინციპით უნდა შევამოწმო ყველა ჩანაწერი ავიღო პირველივე შემხვედრი ანუ უკიდურესი მარცხენა და
-// დავაფორმირო ობიექტი
-//excelHeaderByFieldKey {
-//      Date : 'date'
-//  }
+//
+// getLHeaderRawInfo - დან მიღებულ შედეგში მნიშვნელოვანია დაბრუნებული ენა
+//  თუ ენა მაქვს ესეიგი დაბრუებული სათაურების სგრიქონში არა Required ფილდების სათაურებიც უნდა მოიძებნოს ამ ენაძე
+//  და სხვა ენებზე იგნირი უნდა გაუკეთდეთ
+//
+//  მაგ ეს მნიშვნელოვანიას შეგვიძლია განვმარტოთ შემდეგნაირად:
+//      - ჩვენს შემთხვევაში: ჩანაწერის ფილდებითვის: {*name, *money, debit, credit}
+//        გადმოცემული mlHeader-ები ენების შესაბამისად გარდაიქმნა
+//        ka: [[სახელი, დასახელება], [თანხა]]
+//        ru: [[Название, Имя], [Деньги]]
+//        en: [[name], [money, amount]]
+//      - getLHeaderRawInfo - დაგვიბრუნა:
+//          - ენას ka და ფილდების lHeaders
+//          - [სახელი, თანხა] და
+//          - სგრიქონის ინდექსი სადაც ეს lHeader-ები იპოვა
+//      - არა Required {debit, credit} ფილდებისთვის გადმოცემული mlHeader-ები ენების შესაბამისად გარდაიქმნა:
+//        ka: [[დებეტი, დებეტური ანგარიში], []]
+//        ru: [[Дебет], [Кредит]]
+//        en: [[debit], [credit]]
+//      - getLHeaderRawInfo-ს დაბრუნებულ სგრიქონში მოვძებნით მხოლოდ 'დებეტი' ან 'დებეტური ანგარიში' lHeader-ს
+//        და ფილდისთვის credit-ისთვის არაფერს რადგან მას ქართული ენის დასახელაბა არ გააჩნია თუმცა შესაძლებელია ამ სტრიქონში
+//        მოიძებნოს Кредит ან credit უჯრ(ებ)ა რომლის ქვემოთაც იქნება რაღაც მნიშვნელობები
+//
+// getRecordFieldsByLHeaders დაბრუნებულ ენების მიხედვით getLHeaderRawInfo მიერ დაბრუნებულ სტრიქონში უნდა მოვძებნოთ სტრიქონში lHeader-ები
+// და ენების მიხედვით შევქმნათ შესაბამისი ობიექტი: foundedLHeadersByFields
+// ამ ობიექტში ეგრევე ყველა ენა იქნება საჭირო თუ getLHeaderRawInfo ენა არ დააბრუნა, თუ დააბრუნა ეს ობიექტი მხოლდ ამ ენაზე იქნება საჭირო
+//
+//  მაგ:
+//      თუ getLHeaderRawInfo-ს მიერ დაბრუნებული სტრიქონი შედება შემდეგი ჩანაწერებისაგან:
+//
+//  დასახელება	სახელი	თანხა	დებეტი	Деньги	Дебет	Кредит	name	money	debit	credit	ვალუტა
+//
+//
+// თუ getLHeaderRawInfo ენა დააბრუნა პირაპირ ეს ობიექტი foundedLHeadersByFields (ჩანაწერების აღწერა) და ინიციალიზირდება დაბრუნებული lHeaders-ებით: ჩვენს შემთხვევაში:
+// {
+//      ka: {
+//          name: სახელი
+//          money: თანხა
+//          }
+// }
+// და მხოლოდ სხვა ფილდებისთვის მოხდება getRecordFieldsByLHeaders-ით დაბრუნებული ენის შესაბამისი ობიექტის lHeader-ები მოძებნა
+// ჩვენს მაგალითში შესაქმნელი foundedLHeadersByFields (ჩანაწერების აღწერა) ვიღებთ
+// {
+//      ka: {
+//          name: სახელი
+//          money: თანხა
+//          debit: დებეტი
+//          }
+// }
+//
+// თუ getLHeaderRawInfo ენა არ დააბრუნა
+// ყველა ენისთვის უნდა მივიღოთ foundedLHeadersByFields (ჩანაწერების აღწერა) ობიექტი
+// {
+//      ka: {
+//          name: სახელი
+//          money: თანხა
+//          debit: დებეტი
+//          }
+//      ru: {
+//          money: Деньги
+//          debit: Дебет
+//          credit: Кредит
+//          }
+//      en: {
+//          name: name
+//          money: money
+//          debit: debit
+//          credit: credit
+//          }
+// }
+// ამ დროს შესაქმნელი foundedLHeadersByFields (ჩანაწერების აღწერა) ვიღებთ იმ foundedLHeadersByFields ობიექტს რომელსაც ყველაზე მეტი key ანუ field-ის lHeader ექნება ნაპოვნი
+// ჩვენს მაგალითში მოხდება
+//      en: {
+//          name: name
+//          money: money
+//          debit: debit
+//          credit: credit
+//          }
+//
+// შესაქმნელი foundedLHeadersByFields (ჩანაწერების აღწერა) მიიღება შემდეგი ალგორითმით:
+// getLHeaderRawInfo-ს მიერ დაბრუნებული სტრიქონიში ვეძებ საჭირო lHeader-ს პოვნის შემთხვევაში ვიღებ
+// შესაბამისი ენის მიხედვით შესაბამის ფილდს getRecordFieldsByLHeaders-ით დაბრუნებულ ობიექტში
+// ეს ფილდი თუ არა აქვს შექმნის პროცესში არსებულ foundedLHeadersByFields-ობიექტს ვამატებ ინააღმდეგ შემთვევაში ვიკიდებ
