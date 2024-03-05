@@ -164,7 +164,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
                     }
                 });
             })) {
-                getLHeaderRawInfo.rawIndex = recordsStartRawIndex + rawIndex;
+                getLHeaderRawInfo.rawIndex = recordsStartRawIndex + rawIndex +1;
 
                 return true;
             }
@@ -200,7 +200,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
     }
 
     const sheet = sheets[0].sheet;
-
+     console.log(xlsx.utils.encode_row(5))
     //ამ შემთხვევაში ვეძახი უბრალოდ ეს კოდი ამოვარდება აქედან რადგან გადმოეცემა
     const headerRawInfo =
         getLHeaderRawInfo(sheets[0],
@@ -233,6 +233,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
 
     // excelHeaderByFieldKey ობიექტში ვაყალიბებთ ჩანაწერის ფილდის დასახელებას თუ რომელი არსებული სვეტის დასახელება შეესაბამება
     let excelHeaderByFieldKey = {};
+   console.log(recordFieldsByLHeaders)
     Object.keys(recordFieldsByLHeaders).forEach(recordLHeader => {
         // todo: excelHeaderByFieldKey მისაღებად პრიორიტეტული უნდა იყოს getLHeaderRawInfo-ით დაბრუნებული
         //  და არა აუცილებელი ფილდებისთვის პირველივე შემხვედრი მარცხნიდან (getLHeaderRawInfo-ით დაბრუნებულ ენაზე
@@ -246,7 +247,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
             excelHeaderByFieldKey[recordFieldsByLHeaders[recordLHeader]] = excelHeader;
         }
     });
-
+console.log(excelHeaderByFieldKey)
     // ვამოწმებთ ჩანაწერის რომელი აუცილებელი ფილდისთვის ექსელში არ გვაქვს შესაბამისსი სვეტის დასახელება
     Object.keys(recordDescriptionByFields).forEach(key => {
         const fieldOption = recordDescriptionByFields[key];
@@ -260,7 +261,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
 
     // აუცილებელის სვეტის არქონის შემთხვევაში მისი ყველა ენის დასახელებებს ვაგზავნით შეცდომის სახით
     if (requiredHeaders.length > 0) {
-        sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, gssLanguage.lString(gssLanguage.mlStrings['importExcelRequiredHeaders'], {language: language})
+        sendErrorEMail(req, res, next, errorMailSender, errorMailSubject, gssLanguage.lString(gssLanguage.mlStrings['excelSheetHasNoData'], {language: language})
             + '\n'
             + String.format('<div style="margin: 0; border-bottom: 1px solid #d0d0d0; padding: 3px;">{0}</div>', [
                 requiredHeaders.map(requiredHeader => requiredHeader.join(` ${gssLanguage.lString(gssLanguage.mlStrings['or'], {language: language})} `)).join(' - ')
@@ -350,3 +351,40 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
 };
 
 // todo: ალგორითმი ლაპარაკად დამიწერე
+
+// todo: ალგორითმი ლაპარაკად დამიწერე
+// getLHeaderRawInfo - დან მიღებულ შედეგში პირველრიგში უნდა შევამოწმო ენა თუ ენა
+// მაქვს ესეიგ იჩანაწერებიც მაქვს კონკრეტულ ენაზე,
+
+
+//headerRawInfo => getLHeaderRawInfo.language - getLHeaderRawInfo.lHeaders
+// recordFieldsByLHeaders[getLHeaderRawInfo.language]
+// მაქვს :
+// recordFieldsByLHeaders[getLHeaderRawInfo.language] - ში უნდა ვირბინო foreach- ით რადგან ყველა ჩანაწერი მჭირდება
+// excelHeaders - ში უნდა ვიებინო some - ით დავაბრუნო პირველივე შემხვედრი
+// ამის მერე მჭირდება კოდის ეს ნაწილი
+// if (excelHeader) {
+//     excelHeaderByFieldKey[recordFieldsByLHeaders[recordLHeader]] = excelHeader;
+// }
+//  excelHeaderByFieldKey - ში ვაყალიბებ ესეთ ობიექტს -
+//  excelHeaderByFieldKey {
+//     Date : 'თარიღი'
+//  }
+//მაგ :
+// recordFieldsByLHeaders[getLHeaderRawInfo.language][0].forEach(obj => {
+//     excelHeader.some(lheader => {
+//         if (obj.key.toLowerCase() === lheader.toLowerCase()) {
+//             excelHeaderByFieldKey[obj.value] = lheader;
+//             return true;
+//         }
+//     });
+// });
+
+
+// არ მაქვს :
+// getRecordFieldsByLHeaders -დან უნდა ავიღო ის მასივი რომელშიც მეტი ჰედერი მექნება ან თუ ერთმანეთის ტოლია პირველივე.
+// დადგენილ მასივში იგივე პრინციპით უნდა შევამოწმო ყველა ჩანაწერი ავიღო პირველივე შემხვედრი ანუ უკიდურესი მარცხენა და
+// დავაფორმირო ობიექტი
+//excelHeaderByFieldKey {
+//      Date : 'date'
+//  }
