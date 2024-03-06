@@ -383,8 +383,8 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
 // }
 //
 // getLHeaderRawInfo - დან მიღებულ შედეგში მნიშვნელოვანია დაბრუნებული ენა
-//  თუ ენა მაქვს ესეიგი დაბრუებული სათაურების სგრიქონში არა Required ფილდების სათაურებიც უნდა მოიძებნოს ამ ენაძე
-//  და სხვა ენებზე იგნირი უნდა გაუკეთდეთ
+//  თუ ენა მაქვს ესეიგი დაბრუებული სათაურების სტრიქონში არა Required ფილდების სათაურებიც უნდა მოიძებნოს ამ ენაძე
+//  და სხვა ენებზე იგნორი უნდა გაუკეთდეთ
 //
 //  მაგ ეს მნიშვნელოვანიას შეგვიძლია განვმარტოთ შემდეგნაირად:
 //      - ჩვენს შემთხვევაში: ჩანაწერის ფილდებითვის: {*name, *money, debit, credit}
@@ -421,6 +421,29 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
 //          money: თანხა
 //          }
 // }
+// getLHeaderRawInfo არ აბრუნებს მაგ ობიექტს აბრუნებს
+//   -  getLHeaderRawInfo :
+//      {
+//          lHeaders :
+//         [
+//              სახელი
+//              თანხა
+//          ],
+//          rawIndex : raw,
+//          language : 'ka'
+//       }
+//   როგორც მივხვდი უნდა დააბრუნოს ესე
+//   -  getLHeaderRawInfo :
+//      {
+//          foundedLHeadersByFields : {ka: {name:სახელი,money:თანხა}},
+//          rawIndex : raw,
+//       }
+//
+//  (გადასაკეთებელია ეგეთ ობიექტი რომ დააბრუნოს უკვე) ანუ foundedLHeadersByFields, რომ დააბრუნოს
+//  ეს იმიტომ დავაწერე რომ ალგორითმში გვიწერია ასე რომ getLHeaderRawInfo - გამოძახების შემდეგ ეს ობიექტი foundedLHeadersByFields შევსებულია,
+//  მაგრამ ეს ობიექტი შევსებული  არაა რეალურად ამ ჟამინდელი სიტვაციით და ჯერ getLHeaderRawInfo მიერ დაბრუნებული ინფორმაციით
+//  უნდ შევავსო და მერე getRecordFieldsByLHeaders - ის დაბრუნებული ინფორმაციით
+
 // და მხოლოდ სხვა ფილდებისთვის მოხდება getRecordFieldsByLHeaders-ით დაბრუნებული ენის შესაბამისი ობიექტის lHeader-ები მოძებნა
 // ჩვენს მაგალითში შესაქმნელი foundedLHeadersByFields (ჩანაწერების აღწერა) ვიღებთ
 // {
