@@ -43,30 +43,53 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
      * @returns {object} - An object containing the record headers as keys and their corresponding field keys as values.
      */
         // todo: ენების მიხედვით მიხედვით უნდა დააბრუნოს {ka: [ყველა სათაური], }
+
+        // uniqLanguages.forEach(language => {
+        //     columnsMlHeadersObjectsByLanguage[language] = columnsMlHeadersObjects.map((columnMlHeadersObjects, index) => {
+        //         return columnMlHeadersObjects.map(columnMlHeadersObject => columnMlHeadersObject[language])
+        //             .concat(allLanguageColumnsHeaders[index])
+
+        // {
+//      ka: {
+//          name: სახელი
+//          money: თანხა
+//          debit: დებეტი
+//          }
+// }
     const getRecordFieldsByLHeaders = (recordDescriptionByFields, language) => {
-            let recordHeaders = {};
+            let allLanguageHeaders = {};
+            let recordHeadersByLanguage = {}
+
             Object.keys(recordDescriptionByFields).forEach(key => {
                 arrify(recordDescriptionByFields[key].mlHeader).forEach(header => {
                     // აქ ვამოწმებთ თუ header სტრიქონია, მაშინ ვიღებთ შესაბამის gssLanguage.mlStrings - დან შესაბამის ობიექტს
                     // ხოლო header სტრიქონი თუ არაა მაშინ ობიექტია და ვიღებს ამ ობიექტს
                     let mlHeader = is.string(header) ? gssLanguage.mlStrings[header] : header;
                     if (!mlHeader) {
-                        recordHeaders[header] = key
+                        allLanguageHeaders[header] = key
                         return;
                     }
-
                     if (language) {
-                        recordHeaders[mlHeader[language].toLowerCase()] = key;
+                        if (!recordHeadersByLanguage[language]) {
+                            recordHeadersByLanguage[language] = {};
+                        }
+                        recordHeadersByLanguage[language][mlHeader[language].toLowerCase()] = key;
                     } else {
-                        Object.keys(mlHeader).forEach(mlKey => {
-                            recordHeaders[mlHeader[mlKey.toLowerCase()]] = key;
+                        Object.keys(mlHeader).forEach(lang => {
+                            if (!recordHeadersByLanguage[lang]) {
+                                recordHeadersByLanguage[lang] = {};
+                            }
+                            recordHeadersByLanguage[lang][mlHeader[lang]] = key;
                         });
                     }
                 });
             });
-
-            return recordHeaders;
+            Object.keys(recordHeadersByLanguage).forEach(language => {
+                recordHeadersByLanguage[language] = {...recordHeadersByLanguage[language], ...allLanguageHeaders}
+            })
+            return recordHeadersByLanguage;
         };
+
 
     /**
      * Returns the raw index of the header in the given sheet that matches the provided ml headers.
@@ -77,6 +100,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
      * @returns {undefined|{ lHeaders: Array<string>, rawIndex: number, language: undefined|string }} - The found headers by one language and the raw index.
      */
     const getLHeaderRawInfo = (sheetInfo, columnsMlHeaders) => {
+        columnsMlHeaders = [];
         const
             sheet = sheetInfo.sheet,
             sheet_ref = sheet['!ref'];
@@ -86,7 +110,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
             return;
         }
 
-        const recordsStartRawIndex = xlsx.utils.decode_range(sheet_ref).s.r;
+        const recordsStartRawIndex = xlsx.utils.decode_range(sheet_ref).s.r + 1;
         if (!columnsMlHeaders.length) {
             return {
                 lHeaders: [],
@@ -133,7 +157,6 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
                     .concat(allLanguageColumnsHeaders[index])
             });
         });
-
         // ვიღებ ექსელის რეკორდებს
         const excelRecords = xlsx.utils.sheet_to_json(sheet, {
             raw: false,
@@ -219,10 +242,11 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
 
     const excelHeaders = xlsx.utils.sheet_to_json(sheet, {
         raw: false,
-        header: 1,
-        defval: '',
-        range: `A${headerRawInfo.rawIndex + 1}:ZZ${headerRawInfo.rawIndex + 1}`
-    })[0];
+        blankrows : true,
+        header : 1,
+        //range: `A${headerRawInfo.rawIndex}:ZZ${headerRawInfo.rawIndex}`
+        range : sheet["!ref"]
+    });
     const excelRecords = xlsx.utils.sheet_to_json(sheet, {
         raw: false,
         blankrows: '**',
@@ -231,11 +255,42 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
     });
 
     // excelHeaderByFieldKey ობიექტში ვაყალიბებთ ჩანაწერის ფილდის დასახელებას თუ რომელი არსებული სვეტის დასახელება შეესაბამება
-    let excelHeaderByFieldKey = {};
+    // შესაქმნელი foundedLHeadersByFields (ჩანაწერების აღწერა) მიიღება შემდეგი ალგორითმით:
+// getLHeaderRawInfo-ს მიერ დაბრუნებული სტრიქონიში ვეძებ საჭირო lHeader-ს პოვნის შემთხვევაში ვიღებ
+// შესაბამისი ენის მიხედვით შესაბამის ფილდს getRecordFieldsByLHeaders-ით დაბრუნებულ ობიექტში
+// ეს ფილდი თუ არა აქვს შექმნის პროცესში არსებულ foundedLHeadersByFields-ობიექტს ვამატებ ინააღმდეგ შემთვევაში ვიკიდებ
+    console.log(excelHeaders)
+    console.log(headerRawInfo.lHeaders)
+    let foundedLHeadersByFields = {};
+    console.log(recordFieldsByLHeaders[headerRawInfo.language])
+    if (headerRawInfo.language) {
+        excelHeaders.forEach(header => {
+            if (headerRawInfo.lHeaders.includes(header)) {
+                foundedLHeadersByFields[headerRawInfo.language][recordFieldsByLHeaders[headerRawInfo.language][header]] = header
+            } else {
+                recordFieldsByLHeaders[headerRawInfo.language].some(lHeader => {
+                    if (lHeader[header]) {
+                        foundedLHeadersByFields[headerRawInfo.language][lHeader[header]] = header;
+                        return true;
+                    }
+                })
+            }
+        })
+    } else {
+        Object.keys(recordFieldsByLHeaders).forEach(language => {
+            excelHeaders.forEach(header => {
+                recordFieldsByLHeaders[language].forEach(lHeader => {
+                    if(lHeader[header]){
+                        foundedLHeadersByFields[language][lHeader[header]] = header;
+                        return true;
+                    }
+                })
+            })
+        })
+    }
+    console.log(foundedLHeadersByFields)
     Object.keys(recordFieldsByLHeaders).forEach(recordLHeader => {
-        // todo: excelHeaderByFieldKey მისაღებად პრიორიტეტული უნდა იყოს getLHeaderRawInfo-ით დაბრუნებული
-        //  და არა აუცილებელი ფილდებისთვის პირველივე შემხვედრი მარცხნიდან (getLHeaderRawInfo-ით დაბრუნებულ ენაზე
-        //  ან ყველა ენაზე თუ required ფილდები თუ არ აქვს) და არა ბოლო როგორც ეხლაა
+
 
         const excelHeader = _.find(excelHeaders, excelHeader => {
             return excelHeader && (excelHeader.toLowerCase().indexOf(recordLHeader.toLowerCase()) === 0);
@@ -489,11 +544,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
 // ეს ფილდი თუ არა აქვს შექმნის პროცესში არსებულ foundedLHeadersByFields-ობიექტს ვამატებ ინააღმდეგ შემთვევაში ვიკიდებ
 
 
-
-
-
 //                                  getLHeaderRawInfo - არწერა :
-
 
 
 // პარამეტრები :
