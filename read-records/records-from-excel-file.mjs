@@ -487,3 +487,140 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
 // getLHeaderRawInfo-ს მიერ დაბრუნებული სტრიქონიში ვეძებ საჭირო lHeader-ს პოვნის შემთხვევაში ვიღებ
 // შესაბამისი ენის მიხედვით შესაბამის ფილდს getRecordFieldsByLHeaders-ით დაბრუნებულ ობიექტში
 // ეს ფილდი თუ არა აქვს შექმნის პროცესში არსებულ foundedLHeadersByFields-ობიექტს ვამატებ ინააღმდეგ შემთვევაში ვიკიდებ
+
+
+
+
+
+//                                  getLHeaderRawInfo - არწერა :
+
+
+
+// პარამეტრები :
+// getLHeaderRawInfo გადაეცემა sheetInfo - შიტის სახელი : string , შიტი : Object
+// columnsMlHeaders : Array <array ან string>
+// getLHeaderRawInfo - აბრუნებს (undefined - ს ან ობიექტს {lHeaders : Array<string> , rawIndex : რიცხვი ,language :undefined | string}) :
+
+// ვთრეულობ შიტს - რომელიც შემოწმებულია და აუცილებლად მექნება, მაგრამ არ არის შემოწმებული შიტი ცარიელია თუ არა და ამას ვამოწმებ ამ ფუნქციაში. (sheet_ref)
+// ვთრეულობ recordsStartRawIndex(საიდანაც იწყება ჩანაწერები), sheet_ref  გვაძლევს მხოლოდ იმ რეინჯს საიდანაც იწყება ჩანაწერები და სად მთავრდება
+// მაგ : შიტი შეიძლება იწყებოსდეს A1:T100, მაგრამ ჩანაწერები მქონდეს A3:E100 - recordsStartRawIndex = A3 - ის ანუ ინდექსით 2 ის xlsx - დოკუმენტაციის მიხედვით, რადგან სწორად რომ მოგვცეს raw მერე დავამატო
+// columnsMlHeaders - ვამოწმებ არის თუ არა მასში ჩანაწერები, რადგან ჩვენ შემთხვევაში ამ ფუნქციას მხოლოდ გადმოეცემა [*[name],*[debit]]  - ვადგენთ სამომავლოდ გასათვალისწინებლად Field - ებში გვაქვს თუ არა required ჩანაწერები
+// მაგ : {*name,*debit,credit,Rate} , ვიღებთ  [[name],[debit]]
+// let columnsMlHeadersObjects = []; გადმოცემული columnsMlHeaders - დან მიიღება gssLanguage.mlStrings - ის ml ობიექტები
+// let allLanguageColumnsHeaders = []; ის დასახელებები, რომელიც არ იძებნება gssLanguage.mlStrings - ში
+// მაგ : ქვედატირეები აღნიშანვს რომელიც არსებობს gssLanguage.mlStrings - ში
+//       - columnsMlHeaders - დaნ იქმნება შემდეგი მასივები columnsMlHeadersObjects და allLanguageColumnsHeaders
+//       [
+//          [_debit, დებეტური ანგარიში],
+//          ვალუტა,
+//          [_credit, კრედიტული ანგარიში]
+//       ]
+//       - columnsMlHeadersObjects :
+//       [
+//          [{ka: 'დებეტი',en: 'Debit',ru: 'Дебет'}],
+//          [],
+//          [{ka: 'კრედიტი',en: 'Credit',ru: 'Кредит'}]
+//       ]
+//       - allLanguageColumnsHeaders :
+//       [
+//          [დებეტური ანგარიში],
+//          [ვალუტა],
+//          [კრედიტული ანგარიში]
+//       ]
+// ჩვენ შემთხვევაში :
+// [
+//      [ 'დებეტური ანგარიშის სახელი', 'debitAccountName' ],
+//      'დებეტური ანგარიშის ვალუტა',
+//      'კრედიტული ანგარიშის ნომერი',
+//      [ '_amount', '_money' ]
+// ]
+//    - columnsMlHeadersObjects :
+//      [
+//          [],
+//          [],
+//          [],
+//          [{ ka: 'თანხა', en: 'Amount', ru: 'Сумма' },{ ka: 'თანხა', en: 'money', ru: 'деньги' }]
+//      ]
+//    - allLanguageColumnsHeaders :
+//      [
+//          [ 'დებეტური ანგარიშის სახელი', 'debitAccountName' ],
+//          [ 'დებეტური ანგარიშის ვალუტა' ],
+//          [ 'კრედიტული ანგარიშის ნომერი' ],
+//          []
+//      ]
+
+// const uniqLanguages - უნიკალური ენები - columnsMlHeadersObjects - დან გამომდინარე
+// მაგ : [ka,ru], [ka,en,ru] [ka,en,ru,tr] -> [ka,ru] ჩვენ შემთხვევაში columnsMlHeadersObjects - დან გმომდინარე [ka,en,ru]
+// let columnsMlHeadersObjectsByLanguage = {}; ენების მიხედვით იქმნება header - ების მასივის მასივები
+// მაგ: ჩვენ შემთხვევაში columnsMlHeadersObjects და allLanguageColumnsHeaders გამომდინარე იქმნება
+//     - columnsMlHeadersObjectsByLanguage :
+//          ka: [
+//             [ 'დებეტური ანგარიშის სახელი', 'debitAccountName' ],
+//             [ 'დებეტური ანგარიშის ვალუტა' ],
+//             [ 'კრედიტული ანგარიშის ნომერი' ],
+//             [ 'თანხა', 'თანხა' ]
+//           ],
+//           en: [
+//             [ 'დებეტური ანგარიშის სახელი', 'debitAccountName' ],
+//             [ 'დებეტური ანგარიშის ვალუტა' ],
+//             [ 'კრედიტული ანგარიშის ნომერი' ],
+//             [ 'Amount', 'money' ]
+//           ],
+//           ru: [
+//             [ 'დებეტური ანგარიშის სახელი', 'debitAccountName' ],
+//             [ 'დებეტური ანგარიშის ვალუტა' ],
+//             [ 'კრედიტული ანგარიშის ნომერი' ],
+//             [ 'Сумма', 'деньги' ]
+//           ]
+
+// excelRecords - ექსელი ჩანაწერები მასივის მასივად
+// getLHeaderRawInfo - ფორმირდება ასე
+// მაგ :
+//      - excelRecords - ის ერთი raw
+//      [
+//          დებეტი,
+//          დებეტური ანგარიშის სახელი,
+//          debitAccountName,
+//          ვალუტა,
+//          დებეტური ანგარიშის ვალუტა,
+//          credit,
+//          კრედიტული ანგარიშის ნომერი,
+//          თანხა,
+//          Сумма,
+//          Amount
+//      ]
+// copyColumnsMlHeadersObjectsByLanguage - არის კოპია სადაც პოვნის შემდეგ ჩანაწერი იშლება
+//      - copyColumnsMlHeadersObjectsByLanguage :
+//          ka: [
+//             [ 'დებეტური ანგარიშის სახელი', 'debitAccountName' ],
+//             [ 'დებეტური ანგარიშის ვალუტა' ],
+//             [ 'კრედიტული ანგარიშის ნომერი' ],
+//             [ 'თანხა', 'თანხა' ]
+//           ]
+// წაშლილი ჩანაწერი :
+//            ka: [
+//             [ 'დებეტური ანგარიშის ვალუტა' ],
+//             [ 'კრედიტული ანგარიშის ნომერი' ],
+//             [ 'თანხა', 'თანხა' ]
+//           ] ....
+//
+//     -  getLHeaderRawInfo -
+//      {
+//          lHeaders :
+//         [
+//              დებეტური ანგარიშის სახელი,
+//              დებეტური ანგარიშის ვალუტა,
+//              კრედიტული ანგარიშის ნომერი,
+//              თანხა
+//          ],
+//          rawIndex : raw,
+//          language : 'ka'
+//       }
+
+// getLHeaderRawInfo როგორ მიიღება, ალგორითმი :
+// columnsMlHeadersObjectsByLanguage - ში მიღებულ  ენების მიხედვით მიღებულ მასივის მასივებში
+// copyColumnsMlHeadersObjectsByLanguage ვიკოპირებ კონკრეტულ ენას,
+// დავრბივარ ამ ენის მასივებში, excelRecords - ის მასივის მასივიდან აღებული ერთი მასივის value -ებს თუ შედის copyColumnsMlHeadersObjectsByLanguage - ის რომელიმე მასივში ვშლი იმ მასივს
+// ამ value სხვა მასივებში აღარ ვამოწმებ რადგან ვიცი რომ ყველა მასივი განასხვავებულია
+// ყოველჯერზე ვამოწმებ copyColumnsMlHeadersObjectsByLanguage - ის length - ს,
+//  მაქვს თუ არა ელემენტები თუ დავაცარიელე სხვა ენებს ვიკიდებ  ესეიგი კონკრეტულ ენაზე ვიპოვე raw
