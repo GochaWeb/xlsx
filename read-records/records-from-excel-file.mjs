@@ -265,7 +265,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
             foundedLHeadersByFields[headerRawInfo.language] = {};
         }
         excelHeaders.forEach(header => {
-            if (headerRawInfo.lHeaders.includes(header)) {
+            if (headerRawInfo.lHeaders.includes(header) && !foundedLHeadersByFields[headerRawInfo.language][recordFieldsByLHeaders[headerRawInfo.language][header]]) {
                 foundedLHeadersByFields[headerRawInfo.language][recordFieldsByLHeaders[headerRawInfo.language][header]] = header;
             } else {
                 if (recordFieldsByLHeaders[headerRawInfo.language][header] && !foundedLHeadersByFields[headerRawInfo.language][recordFieldsByLHeaders[headerRawInfo.language][header]]) {
