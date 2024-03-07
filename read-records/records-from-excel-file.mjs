@@ -268,7 +268,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
             if (headerRawInfo.lHeaders.includes(header)) {
                 foundedLHeadersByFields[headerRawInfo.language][recordFieldsByLHeaders[headerRawInfo.language][header]] = header;
             } else {
-                if (recordFieldsByLHeaders[headerRawInfo.language][header]) {
+                if (recordFieldsByLHeaders[headerRawInfo.language][header] && !foundedLHeadersByFields[headerRawInfo.language][recordFieldsByLHeaders[headerRawInfo.language][header]]) {
                     foundedLHeadersByFields[headerRawInfo.language][recordFieldsByLHeaders[headerRawInfo.language][header]] = header
                 }
             }
@@ -280,7 +280,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
             }
             excelHeaders.forEach(Headers => {
                 Headers.forEach(header => {
-                    if (recordFieldsByLHeaders[lan][header]) {
+                    if (recordFieldsByLHeaders[lan][header] && !foundedLHeadersByFields[lan][recordFieldsByLHeaders[lan][header]]) {
                         foundedLHeadersByFields[lan][recordFieldsByLHeaders[lan][header]] = header
                     }
                 })
@@ -302,7 +302,7 @@ export default (req, res, next, excelPath, sheetNames, recordDescriptionByFields
         }
         foundedLHeadersByFields = maxLengthObject;
     }
-
+console.log(foundedLHeadersByFields)
     Object.keys(recordFieldsByLHeaders).forEach(recordLHeader => {
 
 
