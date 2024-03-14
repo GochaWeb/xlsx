@@ -300,9 +300,15 @@ export default (req, res, next, excelPath, sheetNames, recordsDescription, langu
 
         // ექსელის ანაწერიდან ვქმნით ჩანაწერს - record
         Object.keys(excelRecord).forEach((key) => {
-            const fieldName = excelLHeaderByFieldKey[key];
+            const
+                fieldName = excelLHeaderByFieldKey[key],
+                description = recordsDescription[fieldName];
             if (fieldName) {
-                record[fieldName] = excelRecord[key];
+                if (description.headerShouldStart) {
+                    record[fieldName] = Object.assign(record[fieldName] || {}, {key: excelRecord[key]};
+                } else {
+                    record[fieldName] = excelRecord[key];
+                }
             }
         });
 
