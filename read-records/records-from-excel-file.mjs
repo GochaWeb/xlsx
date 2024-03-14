@@ -127,14 +127,18 @@ export default (req, res, next, excelPath, sheetNames, recordsDescription, langu
                 const copyColumnLHeadersLength = copyColumnLHeaders.length;
 
                 return rawValues.some(value => {
+                    value = (value || '').trim();
+
                     if (!value) {
                         return false;
                     }
 
                     copyColumnLHeaders.some((columnLHeaders, index) => {
-                        if (_.findIndex(columnLHeaders, columnLHeader => (recordsDescription[recordsFields[(copyColumnLHeadersLength - copyColumnLHeaders.length) + index]].headerShouldStart
-                            ? columnLHeader.toLowerCase().indexOf(value.toLowerCase()) === 0
-                            : columnLHeader.toLowerCase() === value.toLowerCase()))) {
+                        if (_.findIndex(columnLHeaders, columnLHeader => {
+                            return (recordsDescription[recordsFields[(copyColumnLHeadersLength - copyColumnLHeaders.length) + index]].headerShouldStart
+                                ? columnLHeader.toLowerCase().indexOf(value.toLowerCase()) === 0
+                                : columnLHeader.toLowerCase() === value.toLowerCase());
+                        })) {
 
                             result.lHeaders.push(value);
 
@@ -185,13 +189,18 @@ export default (req, res, next, excelPath, sheetNames, recordsDescription, langu
         return;
     }
 
-    const sheet = sheets[0].sheet;
     //ამ შემთხვევაში ვეძახი უბრალოდ ეს კოდი ამოვარდება აქედან რადგან გადმოეცემა
+    const sheet = sheets[0].sheet;
+
     const
         recordsFields = Object.keys(recordsDescription),
 
-        requiredRecordsFields = recordsFields.filter(fieldName => recordsDescription[fieldName].required === true),
+        requiredRecordsFields = recordsFields.filter(fieldName => recordsDescription[fieldName].required === true);
 
+    // recordsDescription - შეი ვაყენებ შესაბამის fieldName
+    recordsFields.forEach(fieldName =>  recordsDescription['fieldName'] = fieldName)
+
+    const
         lHeadersRawInfo =
             getLHeadersRawInfo(sheets[0],
                 recordsDescription.filter(fieldName => requiredRecordsFields.includes(fieldName)));
@@ -233,11 +242,11 @@ export default (req, res, next, excelPath, sheetNames, recordsDescription, langu
         range: lHeadersRawInfo.rawIndex + 1
     });
 
-    // foundLHeaderByFieldKey ობიექტში ვაყალიბებთ ჩანაწერის ფილდის დასახელებას
+    // foundDescriptionByLHeader ობიექტში ვაყალიბებთ ჩანაწერის ფილდის აღწერას
     // თუ რომელი ნაპოვნი აღწერის დასახელება შეესაბამება
     const
         foundLHeaders = [],
-        foundLHeaderByFieldKey = {};
+        foundDescriptionByLHeader = {};
 
     // required ფილდების სათაურების fieldKey ვქმნი
     columnsMlHeadersObjectsByLanguage[detectedLanguage]
@@ -252,7 +261,7 @@ export default (req, res, next, excelPath, sheetNames, recordsDescription, langu
                     // !!! მნიშვნელოვანია !!!
                     // getColumnsMlHeadersObjectsByLanguage ფუნქცია თითოეული ენისთვის
                     // აბრუნებს recordsDescription შესაბამისი სიგრძის მასივს
-                    foundLHeaderByFieldKey[lHeader] = recordsFields[lHeadersIndex];
+                    foundDescriptionByLHeader[lHeader] = recordsDescription[recordsFields[lHeadersIndex]];
                     return true;
                 }
             }));
@@ -269,28 +278,33 @@ export default (req, res, next, excelPath, sheetNames, recordsDescription, langu
                 // !!! მნიშვნელოვანია !!!
                 // getColumnsMlHeadersObjectsByLanguage ფუნქცია თითოეული ენისთვის
                 // აბრუნებს recordsDescription შესაბამისი სიგრძის მასივს
-                foundLHeaderByFieldKey[lHeader] = recordDescriptionByFieldsKeys[lHeadersIndex];
+                foundDescriptionByLHeader[lHeader] = recordsDescription[recordsFields[lHeadersIndex]];
                 return true;
             }));
 
-    // foundLHeaderByFieldKey ობიექტში ვაყალიბებთ ჩანაწერის ფილდის დასახელებას
+    // foundDescriptionByLHeader ობიექტში ვაყალიბებთ ჩანაწერის ფილდის აღწერას
     // თუ რომელი ექსელში არსებული სვეტის დასახელება შეესაბამება
-    const excelLHeaderByFieldKey = {};
-    Object.keys(foundLHeaderByFieldKey)
-        .forEach(fieldName => {
+    const
+        foundExtDescriptionByFieldName = {};
+    Object.values(foundDescriptionByLHeader)
+        .forEach((description, lHeader) => {
             const excelHeader = _.find(excelHeaders, excelHeader => {
+                excelHeader = excelHeader.trim();
+
                 return excelHeader && (
-                    recordsDescription[fieldName].headerShouldStart
+                    description.headerShouldStart
                         ? excelHeader.toLowerCase().indexOf(lHeader.toLowerCase()) === 0
-                        : excelHeader.toLowerCase() === lHeader.toLowerCase())
+                        : excelHeader.toLowerCase() === lHeader.toLowerCase());
             });
 
             if (excelHeader) {
-                foundLHeaders.push(excelHeader);
-                excelLHeaderByFieldKey[excelHeader] = recordsFields[lHeadersIndex];
+                foundExtDescriptionByFieldName[description.fieldName] = description;
+                // შენახულ დესკრიფშენს დამატებით - ვამატებ ექსელში მოძებნილ lHeader
+                // ამიტომ შეიცავს ამ ცვლადის სახელი ExtDescription
+                foundExtDescriptionByFieldName[description.fieldName].lHeader = lHeader;
+                foundExtDescriptionByFieldName[description.fieldName].restLHeader = excelHeader.split(lHeader).pop().trim().toLowerCase();
             }
         });
-
 
     excelRecords.forEach((excelRecord, lineIndex) => {
         if (is.empty(excelRecord))
@@ -299,56 +313,79 @@ export default (req, res, next, excelPath, sheetNames, recordsDescription, langu
         const record = {};
 
         // ექსელის ანაწერიდან ვქმნით ჩანაწერს - record
-        Object.keys(excelRecord).forEach((key) => {
+        recordsFields.forEach((fieldName) => {
             const
-                fieldName = excelLHeaderByFieldKey[key],
-                description = recordsDescription[fieldName];
-            if (fieldName) {
-                if (description.headerShouldStart) {
-                    record[fieldName] = Object.assign(record[fieldName] || {}, {key: excelRecord[key]};
-                } else {
-                    record[fieldName] = excelRecord[key];
-                }
+                extDescription = foundExtDescriptionByFieldName[fieldName];
+
+            if (extDescription.headerShouldStart) {
+                record[fieldName] = Object.assign(record[fieldName] || {},
+                    {[extDescription.excelHeader]: excelRecord[fieldName]});
+            } else {
+                record[fieldName] = excelRecord[extDescription.excelHeader];
             }
         });
 
         // ვამოწმებთ ჩანაწერის record სისწორეს და ვქმნით
-        // nonAccessibleRecord - ცუდი ჩანაწერების მასივს
-        let nonAccessibleRecordFound = false;
-        let nonAccessibleRecord = {requiredHeader: []};
+        const nonAccessibleRecords = [];
+        recordsFields.forEach(recordFieldName => {
+            const
+                recordFieldNameExtDescription = foundExtDescriptionByFieldName[recordFieldName];
 
-        Object.keys(recordsDescription).forEach(fieldName => {
-            const description = recordsDescription[fieldName];
-            // ჩანაწერის აღწერაში მითითებული ფილდის შესაბამის ექსელის სვეტში
-            // ამ შექმნილი ჩანაწერისთვის record მნიშვნელობა თუ არაა შეტანილი
-            if (foundLHeaderByFieldKey.hasOwnProperty(fieldName) && (!record[fieldName] || record[fieldName].toString().trim() === '')) {
-                // ეს მნიშვნელობა თუ აუცილებელია ამ ჩანაწერს/record ვთვლით ცუდ ჩანაწერად
+            if (recordFieldNameExtDescription.valueIsRequiredByFields) {
+                const nonAccessibleRecord = {};
+                let nonAccessibleRecordFound = false;
+                // ჩანაწერის აღწერაში მითითებული ფილდის შესაბამის ექსელის სვეტში
+                // ამ შექმნილი ჩანაწერისთვის record მნიშვნელობა თუ არაა შეტანილი
 
-                if (!description.headerShouldStart && description.valueIsRequired) {
-                    nonAccessibleRecordFound = true;
+                if (recordFieldNameExtDescription.headerShouldStart) {
+                    arrify(recordFieldNameExtDescription.valueIsRequiredByFields).forEach(fieldName => {
+                        Object.keys(record).forEach(fieldName => {
+                            const fieldExtDescription = foundExtDescriptionByFieldName[fieldName];
+                            if (is.empty(record[fieldName])
+                                && recordFieldNameExtDescription.lHeader == fieldExtDescription.lHeader
+                                && recordFieldNameExtDescription.restLHeader == fieldExtDescription.restLHeader
+                                && ((!fieldExtDescription.headerShouldStart && record[fieldName].trim())
+                                    || (fieldExtDescription.headerShouldStart && Object.key(record[fieldName]).some(key => {
+                                        key = key.trim();
 
+                                        return key.startsWith(recordFieldNameExtDescription.lHeader)
+                                            && key.endsWith(recordFieldNameExtDescription.restLHeader)
+                                            && record[fieldName][key].trim();
+                                    }))
+                                )) {
+                                nonAccessibleRecordFound = true;
+                            }
+                        });
+                    })
+                } else {
+                    if (!record[recordFieldName].trim()) {
+                        nonAccessibleRecordFound = true;
+                    }
+                }
+
+                if (nonAccessibleRecordFound) {
                     nonAccessibleRecord.excelRecord = excelRecord;
-                    nonAccessibleRecord.requiredHeader.push(foundLHeaderByFieldKey[fieldName] || fieldName);
+                    nonAccessibleRecord.requiredHeader.push(recordFieldNameExtDescription.lHeader);
                     nonAccessibleRecord.line = lineIndex + xlsx.utils.decode_range(rangeForExcelRecords.split(':')[0]).s.r + 2;
+
+                    nonAccessibleRecords.push(nonAccessibleRecord);
 
                     return;
                 }
-
-                // თუ აუცილებელი არაა მის მნიშვნელობად ვიღებ ჩანაწერის აღწერაში გადმოცემულ დეფოლტ/მნიშვნელობას
-                record[fieldName] = description.defaultValue || '';
             }
+
+            // თუ აუცილებელი არაა მის მნიშვნელობად ვიღებ ჩანაწერის აღწერაში გადმოცემულ დეფოლტ/მნიშვნელობას
+            record[recordFieldName] = record[recordFieldName] || recordFieldNameExtDescription.defaultValue || '';
         });
 
         // თუ ჩანაწერი/record ცუდი ჩანაწერია ვამატებთ ცუდ ჩანაწერებში
-        if (nonAccessibleRecordFound) {
-            nonAccessibleRecords.push(nonAccessibleRecord);
+        if (nonAccessibleRecords.length) {
             return;
         }
 
         // თუ ჩანაწერი/record კარგი ჩანაწერია ვამატებთ დასაბრუნებელ ჩანაწერებში
         records.push(record);
     });
-
 
     // თუ ცუდი ჩანაწერები მოიძებნა ვაგზავნი მეილს და არაფერს არ ვაბრუნებ
     if (nonAccessibleRecords.length > 0) {
